@@ -14,6 +14,14 @@ add_executable(SensorGuard
     src/main.cpp
     src/gui/MainWindow.h
     src/gui/MainWindow.cpp
+    src/gui/tabs/HomeTab.h
+    src/gui/tabs/HomeTab.cpp
+    src/gui/tabs/DetectionTab.h
+    src/gui/tabs/DetectionTab.cpp
+    src/gui/tabs/CustomizeTab.h
+    src/gui/tabs/CustomizeTab.cpp
+    src/gui/tabs/SettingsTab.h
+    src/gui/tabs/SettingsTab.cpp
     src/backend/IShieldController.h
     src/backend/StubShieldController.h
     src/backend/StubShieldController.cpp

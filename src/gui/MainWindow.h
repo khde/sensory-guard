@@ -4,6 +4,7 @@
 #include <QTabWidget>
 
 class IShieldController;
+class QLabel;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -16,4 +17,5 @@ private:
 
     IShieldController *m_controller;
     QTabWidget *m_tabWidget;
+    QLabel *m_statusLabel;
 };
