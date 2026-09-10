@@ -9,8 +9,6 @@
 
 HomeTab::HomeTab(IShieldController *controller, QWidget *parent): QWidget(parent), m_controller(controller), m_activateButton(new QPushButton(this)) {
     QVBoxLayout *layout = new QVBoxLayout(this);
-    layout->setContentsMargins(16, 16, 16, 16);
-    layout->setSpacing(10);
 
     QLabel *heading = new QLabel("GUARD OVERVIEW", this);
     layout->addWidget(heading);
