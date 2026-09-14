@@ -65,6 +65,11 @@ std::vector<float> OnnxDetector::inference(const std::vector<float>& inputTensor
             1
         );
 
+        if (outputTensors.empty()) {
+            std::cerr << "Inference returned no output." << std::endl;
+            return {};
+        }
+
         float* floatRawData = outputTensors[0].GetTensorMutableData<float>();
         auto tensorInfo = outputTensors[0].GetTensorTypeAndShapeInfo();
         size_t outputSize = tensorInfo.GetElementCount();
@@ -78,6 +83,11 @@ std::vector<float> OnnxDetector::inference(const std::vector<float>& inputTensor
 }
 
 std::vector<DetectionResult> OnnxDetector::detect(const cv::Mat &image, float confidenceThreshold) {
+    if (image.empty()) {
+        std::cerr << "Input image is empty!" << std::endl;
+        return {};
+    }
+
     int targetWidth = 320;
     int targetHeight = 320;
     int imgWidth = image.cols;
