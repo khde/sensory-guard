@@ -1,10 +1,13 @@
 #ifndef ONNX_DETECTOR_H
 #define ONNX_DETECTOR_H
 
+#include "inference/Detection.h"
+
 #include <string>
 #include <vector>
 #include <memory>
 #include <onnxruntime_cxx_api.h>
+#include <opencv2/opencv.hpp>
 
 class OnnxDetector {
 public:
@@ -14,6 +17,8 @@ public:
     bool loadModel(const std::string& modelPath);
 
     std::vector<float> inference(const std::vector<float>& inputTensor);
+
+    std::vector<DetectionResult> detect(const cv::Mat &image, float confidenceThreshold);
     
 private:
     Ort::Env m_env;
