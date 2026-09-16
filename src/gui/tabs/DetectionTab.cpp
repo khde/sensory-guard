@@ -14,10 +14,10 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
     QLabel *title = new QLabel("AI FILTERS", this);
     layout->addWidget(title);
 
-    sensitivityLabel = new QLabel("Sensitivity: 60%", this);
+    sensitivityLabel = new QLabel("Sensitivity: 20%", this);
     sensitivitySlider = new QSlider(Qt::Horizontal, this);
     sensitivitySlider->setRange(0, 100);
-    sensitivitySlider->setValue(60);
+    sensitivitySlider->setValue(20);
 
     layout->addWidget(sensitivityLabel);
     layout->addWidget(sensitivitySlider);
