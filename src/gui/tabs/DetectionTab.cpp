@@ -28,7 +28,13 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
         this,
         &DetectionTab::updateSensitivityLabel
     );
-        
+    connect(
+        sensitivitySlider,
+        &QSlider::valueChanged,
+        this,
+        [this](int) { emitSettingsChanged(); }
+    );
+
     QStringList exposedLabels = {
         "FEMALE_GENITALIA_EXPOSED",
         "FEMALE_BREAST_EXPOSED",
@@ -43,12 +49,8 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
 
     QGroupBox *exposedGroup = new QGroupBox("Exposed", this);
     QVBoxLayout *exposedLayout = new QVBoxLayout(exposedGroup);
-    for (const QString &label : exposedLabels)
-    {
-        QCheckBox *checkBox = new QCheckBox(label, exposedGroup);
-        checkBox->setChecked(true);
-        exposedLayout->addWidget(checkBox);
-    }
+    for (QString &label : exposedLabels)
+        addLabelCheckbox(label, true, exposedLayout, exposedGroup);
     layout->addWidget(exposedGroup);
 
     QStringList coveredLabels = {
@@ -65,15 +67,35 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
 
     QGroupBox *coveredGroup = new QGroupBox("Covered", this);
     QVBoxLayout *coveredLayout = new QVBoxLayout(coveredGroup);
-    for (const QString &label : coveredLabels)
-    {
-        QCheckBox *checkBox = new QCheckBox(label, coveredGroup);
-        checkBox->setChecked(false);
-        coveredLayout->addWidget(checkBox);
-    }
+    for (QString &label : coveredLabels)
+        addLabelCheckbox(label, false, coveredLayout, coveredGroup);
     layout->addWidget(coveredGroup);
 
     layout->addStretch();
+}
+
+QCheckBox *DetectionTab::addLabelCheckbox(const QString &label, bool checked, QVBoxLayout *layout, QWidget *parent) {
+    QCheckBox *checkBox = new QCheckBox(label, parent);
+    checkBox->setChecked(checked);
+    layout->addWidget(checkBox);
+    m_labelCheckBoxes.append(checkBox);
+    connect(checkBox, &QCheckBox::toggled, this, [this](bool) { emitSettingsChanged(); });
+    return checkBox;
+}
+
+void DetectionTab::emitSettingsChanged() {
+    QStringList enabledLabels;
+    for (const QCheckBox *checkBox : m_labelCheckBoxes) {
+        if (checkBox->isChecked())
+            enabledLabels.append(checkBox->text());
+    }
+
+    const float confidenceThreshold = sensitivitySlider->value() / 100.0f;
+    emit settingsChanged(confidenceThreshold, enabledLabels);
+}
+
+void DetectionTab::broadcastCurrentSettings() {
+    emitSettingsChanged();
 }
 
 void DetectionTab::updateSensitivityLabel(int value) {

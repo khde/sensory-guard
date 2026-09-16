@@ -1,13 +1,13 @@
 #include <QApplication>
 
-#include "backend/StubShieldController.h"
+#include "engine/GuardEngine.h"
 #include "gui/MainWindow.h"
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
 
-    StubShieldController controller;
-    MainWindow window(&controller);
+    GuardEngine engine("data/models/320n.onnx");
+    MainWindow window(&engine);
     window.show();
 
     return app.exec();

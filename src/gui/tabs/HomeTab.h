@@ -3,20 +3,20 @@
 
 #include <QWidget>
 
-class IShieldController;
+class GuardEngine;
 class QPushButton;
 
 class HomeTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit HomeTab(IShieldController *controller, QWidget *parent = nullptr);
+    explicit HomeTab(GuardEngine *engine, QWidget *parent = nullptr);
 
 private slots:
     void updateActiveState(bool active);
 
 private:
-    IShieldController *m_controller;
+    GuardEngine *m_engine;
     QPushButton *m_activateButton;
 };
 

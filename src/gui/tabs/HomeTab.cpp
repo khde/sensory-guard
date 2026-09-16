@@ -1,13 +1,13 @@
 #include "HomeTab.h"
 
-#include "backend/IShieldController.h"
+#include "engine/GuardEngine.h"
 
 #include <QLabel>
 #include <QPushButton>
 #include <QStyle>
 #include <QVBoxLayout>
 
-HomeTab::HomeTab(IShieldController *controller, QWidget *parent): QWidget(parent), m_controller(controller), m_activateButton(new QPushButton(this)) {
+HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engine(engine), m_activateButton(new QPushButton(this)) {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     QLabel *heading = new QLabel("GUARD OVERVIEW", this);
@@ -24,14 +24,14 @@ HomeTab::HomeTab(IShieldController *controller, QWidget *parent): QWidget(parent
     layout->addStretch();
 
     connect(m_activateButton, &QPushButton::clicked, this, [this] {
-        if (m_controller->isActive())
-            m_controller->stop();
+        if (m_engine->isActive())
+            m_engine->stop();
         else
-            m_controller->start();
+            m_engine->start();
     });
-    connect(m_controller, &IShieldController::activeChanged, this, &HomeTab::updateActiveState);
+    connect(m_engine, &GuardEngine::activeChanged, this, &HomeTab::updateActiveState);
 
-    updateActiveState(m_controller->isActive());
+    updateActiveState(m_engine->isActive());
 }
 
 void HomeTab::updateActiveState(bool active) {
