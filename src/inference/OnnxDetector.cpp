@@ -101,13 +101,15 @@ std::vector<DetectionResult> OnnxDetector::detect(const cv::Mat &image, float co
     float scale = std::min(static_cast<float>(targetWidth) / imgWidth, static_cast<float>(targetHeight) / imgHeight);
     int newWidth = static_cast<int>(imgWidth * scale);
     int newHeight = static_cast<int>(imgHeight * scale);
+    int padX = (targetWidth - newWidth) / 2;
+    int padY = (targetHeight - newHeight) / 2;
 
     cv::Mat resizedImage;
     cv::resize(image, resizedImage, cv::Size(newWidth, newHeight));
 
-    // Create black 640x640 image, place scaled image at top left
-    cv::Mat letterboxImage = cv::Mat::zeros(targetHeight, targetWidth, CV_8UC3);
-    resizedImage.copyTo(letterboxImage(cv::Rect(0, 0, newWidth, newHeight)));
+    // Center scaled image in YOLO-standard gray padding
+    cv::Mat letterboxImage(targetHeight, targetWidth, CV_8UC3, cv::Scalar(114, 114, 114));
+    resizedImage.copyTo(letterboxImage(cv::Rect(padX, padY, newWidth, newHeight)));
 
     // Convert from BGR to RGB
     cv::Mat rgbImage;
@@ -169,9 +171,9 @@ std::vector<DetectionResult> OnnxDetector::detect(const cv::Mat &image, float co
             float x1 = cx - (w / 2.0f);
             float y1 = cy - (h / 2.0f);
 
-            // Map the coordinates back to the original image size
-            int origX1 = std::clamp(static_cast<int>(x1 / scale), 0, imgWidth);
-            int origY1 = std::clamp(static_cast<int>(y1 / scale), 0, imgHeight);
+            // Remove padding before mapping to the original image
+            int origX1 = std::clamp(static_cast<int>((x1 - padX) / scale), 0, imgWidth);
+            int origY1 = std::clamp(static_cast<int>((y1 - padY) / scale), 0, imgHeight);
             int origWidth  = std::clamp(static_cast<int>(w / scale), 0, imgWidth - origX1);
             int origHeight  = std::clamp(static_cast<int>(h / scale), 0, imgHeight - origY1);
 
