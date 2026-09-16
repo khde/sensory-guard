@@ -18,7 +18,12 @@ OnnxDetector::~OnnxDetector() {
 
 bool OnnxDetector::loadModel(const std::string& modelPath) {
     try {
+#ifdef _WIN32
+        const std::wstring wideModelPath(modelPath.begin(), modelPath.end());
+        m_session = std::make_unique<Ort::Session>(m_env, wideModelPath.c_str(), m_sessionOptions);
+#else
         m_session = std::make_unique<Ort::Session>(m_env, modelPath.c_str(), m_sessionOptions);
+#endif
         std::cout << "Successfully loaded ONNX model from: " << modelPath << std::endl;
         return true;
     } catch (const Ort::Exception& e) {

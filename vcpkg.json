@@ -1,0 +1,9 @@
+{
+  "name": "sensor-guard",
+  "version": "0.1.0",
+  "dependencies": [
+    "opencv",
+    "onnxruntime",
+    "qtbase"
+  ]
+}

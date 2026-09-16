@@ -9,7 +9,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn CONFIG PATHS /usr/lib/x86_64-linux-gnu/cmake/opencv4)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn CONFIG)
 
 find_path(ONNXRUNTIME_INCLUDE_DIR
     NAMES onnxruntime_cxx_api.h
@@ -65,6 +65,23 @@ if(WIN32)
     target_link_libraries(SensorGuard PRIVATE
         d3d11
         dxgi
+    )
+
+    if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
+        set(SENSORGUARD_VCPKG_ROOT "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")
+    elseif(CMAKE_PREFIX_PATH)
+        list(GET CMAKE_PREFIX_PATH 0 SENSORGUARD_VCPKG_ROOT)
+    else()
+        message(FATAL_ERROR "Dependency prefix not found. Configure with the vcpkg toolchain or set CMAKE_PREFIX_PATH.")
+    endif()
+
+    add_custom_command(TARGET SensorGuard POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "$<IF:$<CONFIG:Debug>,${SENSORGUARD_VCPKG_ROOT}/debug/bin,${SENSORGUARD_VCPKG_ROOT}/bin>"
+            "$<TARGET_FILE_DIR:SensorGuard>"
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+            "$<IF:$<CONFIG:Debug>,${SENSORGUARD_VCPKG_ROOT}/debug/Qt6/plugins/platforms,${SENSORGUARD_VCPKG_ROOT}/Qt6/plugins/platforms>"
+            "$<TARGET_FILE_DIR:SensorGuard>/platforms"
     )
 endif()
 
