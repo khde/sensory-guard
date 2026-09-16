@@ -3,6 +3,7 @@
 #include <QPainter>
 #include <QPaintEvent>
 #include <QShowEvent>
+#include <QString>
 
 #ifdef SENSORGUARD_HAS_X11
 #include <X11/Xlib.h>
@@ -81,10 +82,10 @@ void CensorOverlay::paintEvent(QPaintEvent *event) {
 	Q_UNUSED(event);
 
 	QPainter painter(this);
-	painter.setPen(Qt::NoPen);
-	painter.setBrush(Qt::black);
+	painter.setBrush(Qt::NoBrush);
+	painter.setFont(QFont(QStringLiteral("Sans Serif"), 10));
 
-	for (DetectionResult &detection : m_detections) {
+	for (const DetectionResult &detection : m_detections) {
 		const BoundingBox &box = detection.box;
 		const double scaleX = m_sourceSize.width() > 0
 			? static_cast<double>(width()) / m_sourceSize.width()
@@ -97,7 +98,22 @@ void CensorOverlay::paintEvent(QPaintEvent *event) {
 			static_cast<int>(box.y1 * scaleY),
 			static_cast<int>((box.x2 - box.x1) * scaleX),
 			static_cast<int>((box.y2 - box.y1) * scaleY));
-		if (rectangle.isValid())
+		if (rectangle.isValid()) {
+			painter.setPen(QPen(Qt::red, 2));
 			painter.drawRect(rectangle);
+
+			const QString label = QString::fromStdString(detection.entity)
+				+ QStringLiteral(" ")
+				+ QString::number(detection.score * 100.0f, 'f', 1)
+				+ QStringLiteral("%");
+			const QRect labelRectangle = painter.fontMetrics().boundingRect(label).adjusted(-4, -2, 4, 2);
+			const int labelX = rectangle.left();
+			const int labelY = std::max(0, rectangle.top() - labelRectangle.height());
+			const QRect labelBackground(labelX, labelY, labelRectangle.width(), labelRectangle.height());
+
+			painter.fillRect(labelBackground, QColor(0, 0, 0, 190));
+			painter.setPen(Qt::white);
+			painter.drawText(labelBackground, Qt::AlignCenter, label);
+		}
 	}
 }
