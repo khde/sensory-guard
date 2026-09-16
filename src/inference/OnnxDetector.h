@@ -30,7 +30,7 @@ private:
     const char* m_outputName = "output0";
 
     // Shape
-    const std::vector<int64_t> m_inputShape = {1, 3, 320, 320}; 
+    const std::vector<int64_t> m_inputShape = {1, 3, 640, 640}; 
 };
 
 #endif

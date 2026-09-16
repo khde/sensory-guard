@@ -38,7 +38,7 @@ std::vector<float> OnnxDetector::inference(const std::vector<float>& inputTensor
         return {};
     }
 
-    const size_t expectedSize = 1 * 3 * 320 * 320;
+    const size_t expectedSize = 1 * 3 * 640 * 640;
     if (inputTensor.size() != expectedSize) {
         std::cerr << "Error: Input tensor size mismatch! Expected " << expectedSize 
                   << " elements, but got " << inputTensor.size() << std::endl;
@@ -93,8 +93,8 @@ std::vector<DetectionResult> OnnxDetector::detect(const cv::Mat &image, float co
         return {};
     }
 
-    int targetWidth = 320;
-    int targetHeight = 320;
+    int targetWidth = 640;
+    int targetHeight = 640;
     int imgWidth = image.cols;
     int imgHeight = image.rows;
 
@@ -105,7 +105,7 @@ std::vector<DetectionResult> OnnxDetector::detect(const cv::Mat &image, float co
     cv::Mat resizedImage;
     cv::resize(image, resizedImage, cv::Size(newWidth, newHeight));
 
-    // Create black 320x320 image, place scaled image at top left
+    // Create black 640x640 image, place scaled image at top left
     cv::Mat letterboxImage = cv::Mat::zeros(targetHeight, targetWidth, CV_8UC3);
     resizedImage.copyTo(letterboxImage(cv::Rect(0, 0, newWidth, newHeight)));
 
@@ -136,7 +136,7 @@ std::vector<DetectionResult> OnnxDetector::detect(const cv::Mat &image, float co
     }
 
     // Process output
-    const int numBoxes = 2100;
+    const int numBoxes = 8400;
     const int numClasses = 18;
 
     std::vector<cv::Rect> bboxes;
