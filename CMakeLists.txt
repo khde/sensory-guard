@@ -9,7 +9,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(OpenCV REQUIRED CONFIG PATHS /usr/lib/x86_64-linux-gnu/cmake/opencv4)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn CONFIG PATHS /usr/lib/x86_64-linux-gnu/cmake/opencv4)
 
 find_path(ONNXRUNTIME_INCLUDE_DIR
     NAMES onnxruntime_cxx_api.h
@@ -33,15 +33,16 @@ add_executable(SensorGuard
     src/gui/tabs/CustomizeTab.cpp
     src/gui/tabs/SettingsTab.h
     src/gui/tabs/SettingsTab.cpp
-    src/backend/IShieldController.h
-    src/backend/StubShieldController.h
-    src/backend/StubShieldController.cpp
+    src/gui/overlay/CensorOverlay.h
+    src/gui/overlay/CensorOverlay.cpp
+    src/engine/GuardEngine.h
+    src/engine/EngineConfig.h
+    src/engine/GuardEngine.cpp
     src/inference/OnnxDetector.cpp
     src/inference/OnnxDetector.h
     src/inference/Detection.h
     src/inference/Labels.h
     src/platform/IScreenCapture.h
-    src/platform/WindowsCapture.cpp
 )
 
 target_include_directories(SensorGuard PRIVATE
@@ -54,3 +55,33 @@ target_link_libraries(SensorGuard PRIVATE
     ${OpenCV_LIBS}
     ${ONNXRUNTIME_LIBRARY}
 )
+
+if(WIN32)
+    target_sources(SensorGuard PRIVATE
+        src/platform/WindowsCapture.h
+        src/platform/WindowsCapture.cpp
+    )
+
+    target_link_libraries(SensorGuard PRIVATE
+        d3d11
+        dxgi
+    )
+endif()
+
+if(UNIX AND NOT APPLE)
+    find_package(X11 QUIET)
+    if(X11_FOUND)
+        target_compile_definitions(SensorGuard PRIVATE SENSORGUARD_HAS_X11)
+        target_sources(SensorGuard PRIVATE
+            src/platform/LinuxCapture.h
+            src/platform/LinuxCapture.cpp
+        )
+        target_include_directories(SensorGuard PRIVATE ${X11_INCLUDE_DIR})
+        target_link_libraries(SensorGuard PRIVATE ${X11_LIBRARIES})
+        if(X11_Xext_FOUND)
+            target_link_libraries(SensorGuard PRIVATE ${X11_Xext_LIB})
+        else()
+            target_link_libraries(SensorGuard PRIVATE Xext)
+        endif()
+    endif()
+endif()
