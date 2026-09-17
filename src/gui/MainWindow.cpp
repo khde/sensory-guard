@@ -59,9 +59,10 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     DetectionTab *detectionTab = new DetectionTab(m_tabWidget);
     m_tabWidget->addTab(detectionTab, "Detection");
     connect(detectionTab, &DetectionTab::settingsChanged, this,
-        [this](float confidenceThreshold, const QStringList &enabledLabels) {
+        [this](float confidenceThreshold, const QStringList &enabledLabels, int maxFps) {
             EngineConfig config = m_engine->config();
             config.confidenceThreshold = confidenceThreshold;
+            config.maxFps = maxFps;
             config.enabledLabels.clear();
             for (const QString &label : enabledLabels)
                 config.enabledLabels.insert(label.toStdString());

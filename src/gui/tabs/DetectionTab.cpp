@@ -16,7 +16,7 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
 
     sensitivityLabel = new QLabel("Sensitivity: 20%", this);
     sensitivitySlider = new QSlider(Qt::Horizontal, this);
-    sensitivitySlider->setRange(0, 100);
+    sensitivitySlider->setRange(1, 100);
     sensitivitySlider->setValue(20);
 
     layout->addWidget(sensitivityLabel);
@@ -34,6 +34,17 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
         this,
         [this](int) { emitSettingsChanged(); }
     );
+
+    fpsLabel = new QLabel("Max FPS: 20", this);
+    fpsSlider = new QSlider(Qt::Horizontal, this);
+    fpsSlider->setRange(1, 60);
+    fpsSlider->setValue(20);
+
+    layout->addWidget(fpsLabel);
+    layout->addWidget(fpsSlider);
+
+    connect(fpsSlider, &QSlider::valueChanged, this, &DetectionTab::updateFpsLabel);
+    connect(fpsSlider, &QSlider::valueChanged, this, [this](int) {emitSettingsChanged();});
 
     QStringList exposedLabels = {
         "FEMALE_GENITALIA_EXPOSED",
@@ -91,7 +102,8 @@ void DetectionTab::emitSettingsChanged() {
     }
 
     const float confidenceThreshold = sensitivitySlider->value() / 100.0f;
-    emit settingsChanged(confidenceThreshold, enabledLabels);
+    const int maxFps = fpsSlider->value();
+    emit settingsChanged(confidenceThreshold, enabledLabels, maxFps);
 }
 
 void DetectionTab::broadcastCurrentSettings() {
@@ -102,4 +114,8 @@ void DetectionTab::updateSensitivityLabel(int value) {
     sensitivityLabel->setText(
         "Sensitivity: " + QString::number(value) + "%"
     );
+}
+
+void DetectionTab::updateFpsLabel(int value) {
+    fpsLabel->setText("Max FPS: " + QString::number(value));
 }
