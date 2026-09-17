@@ -9,7 +9,7 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn CONFIG)
+find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn video CONFIG)
 
 find_path(ONNXRUNTIME_INCLUDE_DIR
     NAMES onnxruntime_cxx_api.h
@@ -19,6 +19,37 @@ find_library(ONNXRUNTIME_LIBRARY NAMES onnxruntime)
 
 if(NOT ONNXRUNTIME_INCLUDE_DIR OR NOT ONNXRUNTIME_LIBRARY)
     message(FATAL_ERROR "ONNX Runtime development files were not found")
+endif()
+
+set(SENSORGUARD_ONNXRUNTIME_INCLUDE_DIR ${ONNXRUNTIME_INCLUDE_DIR})
+set(SENSORGUARD_ONNXRUNTIME_LIBRARY ${ONNXRUNTIME_LIBRARY})
+
+if(WIN32)
+    option(SENSORGUARD_ENABLE_DIRECTML "Enable DirectML GPU inference on Windows" ON)
+    if(SENSORGUARD_ENABLE_DIRECTML)
+        include(ExternalProject)
+        set(SENSORGUARD_DIRECTML_ROOT "${CMAKE_BINARY_DIR}/onnxruntime-directml")
+        set(SENSORGUARD_DIRECTML_NATIVE_DIR "${SENSORGUARD_DIRECTML_ROOT}/runtimes/win-x64/native")
+        set(SENSORGUARD_DIRECTML_INCLUDE_DIR "${SENSORGUARD_DIRECTML_ROOT}/build/native/include")
+
+        ExternalProject_Add(SensorGuardDirectMLRuntime
+            URL "https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/1.24.4"
+            SOURCE_DIR "${SENSORGUARD_DIRECTML_ROOT}"
+            CONFIGURE_COMMAND ""
+            BUILD_COMMAND ""
+            INSTALL_COMMAND ""
+            UPDATE_COMMAND ""
+        )
+
+        add_library(SensorGuardDirectML SHARED IMPORTED GLOBAL)
+        set_target_properties(SensorGuardDirectML PROPERTIES
+            IMPORTED_IMPLIB "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime.lib"
+            IMPORTED_LOCATION "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime.dll"
+        )
+        add_dependencies(SensorGuardDirectML SensorGuardDirectMLRuntime)
+        set(SENSORGUARD_ONNXRUNTIME_INCLUDE_DIR ${SENSORGUARD_DIRECTML_INCLUDE_DIR})
+        set(SENSORGUARD_ONNXRUNTIME_LIBRARY SensorGuardDirectML)
+    endif()
 endif()
 
 add_executable(SensorGuard
@@ -47,13 +78,13 @@ add_executable(SensorGuard
 
 target_include_directories(SensorGuard PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
-    ${ONNXRUNTIME_INCLUDE_DIR}
+    ${SENSORGUARD_ONNXRUNTIME_INCLUDE_DIR}
 )
 
 target_link_libraries(SensorGuard PRIVATE
     Qt6::Widgets
     ${OpenCV_LIBS}
-    ${ONNXRUNTIME_LIBRARY}
+    ${SENSORGUARD_ONNXRUNTIME_LIBRARY}
 )
 
 if(WIN32)
@@ -66,6 +97,22 @@ if(WIN32)
         d3d11
         dxgi
     )
+
+    # Use std::min/std::max instead of macros defined in windows.h
+    target_compile_definitions(SensorGuard PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
+
+    if(SENSORGUARD_ENABLE_DIRECTML)
+        add_dependencies(SensorGuard SensorGuardDirectMLRuntime)
+        target_compile_definitions(SensorGuard PRIVATE SENSORGUARD_USE_DIRECTML)
+        add_custom_command(TARGET SensorGuard POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime.dll"
+                "$<TARGET_FILE_DIR:SensorGuard>"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime_providers_shared.dll"
+                "$<TARGET_FILE_DIR:SensorGuard>"
+        )
+    endif()
 
     if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
         set(SENSORGUARD_VCPKG_ROOT "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}")

@@ -2,13 +2,32 @@
 
 #include "inference/Labels.h"
 
+#ifdef SENSORGUARD_USE_DIRECTML
+#include <dml_provider_factory.h>
+#endif
+
 #include <iostream>
 #include <algorithm>
 
 OnnxDetector::OnnxDetector(const std::string& modelPath) {
     m_env = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "SensorGuardInference");
-    m_sessionOptions.SetIntraOpNumThreads(4);
     m_sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
+
+#ifdef SENSORGUARD_USE_DIRECTML
+    m_sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+    m_sessionOptions.DisableMemPattern();
+    OrtStatus *status = OrtSessionOptionsAppendExecutionProvider_DML(m_sessionOptions, 0);
+    if (status) {
+        std::cerr << "DirectML unavailable; using CPU inference: "
+                  << Ort::GetApi().GetErrorMessage(status) << std::endl;
+        Ort::GetApi().ReleaseStatus(status);
+        m_sessionOptions.SetIntraOpNumThreads(4);
+    } else {
+        std::cout << "Using DirectML GPU inference." << std::endl;
+    }
+#else
+    m_sessionOptions.SetIntraOpNumThreads(4);
+#endif
 
     loadModel(modelPath);
 }
