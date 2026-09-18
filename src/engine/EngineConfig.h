@@ -7,7 +7,7 @@
 struct EngineConfig {
     float confidenceThreshold = 0.20f;
     std::unordered_set<std::string> enabledLabels;
-    int maxFps = 20;
+    int maxFps = 12;
 };
 
 #endif

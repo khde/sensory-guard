@@ -83,9 +83,6 @@ void GuardEngine::tick() {
 			}),
 		detections.end());
 
-	std::cout << "[GuardEngine] captured " << bgrFrame.cols << "x" << bgrFrame.rows
-			  << ", threshold=" << m_config.confidenceThreshold
-			  << ", detections=" << detections.size() << std::endl;
 	emit detectionsUpdated(detections);
 	m_censoredElements = static_cast<int>(detections.size());
 	emit statsUpdated(m_censoredElements, m_config.maxFps);

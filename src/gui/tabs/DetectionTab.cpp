@@ -22,23 +22,13 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
     layout->addWidget(sensitivityLabel);
     layout->addWidget(sensitivitySlider);
 
-    connect(
-        sensitivitySlider,
-        &QSlider::valueChanged,
-        this,
-        &DetectionTab::updateSensitivityLabel
-    );
-    connect(
-        sensitivitySlider,
-        &QSlider::valueChanged,
-        this,
-        [this](int) { emitSettingsChanged(); }
-    );
+    connect( sensitivitySlider, &QSlider::valueChanged, this,&DetectionTab::updateSensitivityLabel);
+    connect(sensitivitySlider, &QSlider::valueChanged, this, [this](int) { emitSettingsChanged();});
 
-    fpsLabel = new QLabel("Max FPS: 20", this);
+    fpsLabel = new QLabel("Max FPS: 12", this);
     fpsSlider = new QSlider(Qt::Horizontal, this);
     fpsSlider->setRange(1, 60);
-    fpsSlider->setValue(20);
+    fpsSlider->setValue(12);
 
     layout->addWidget(fpsLabel);
     layout->addWidget(fpsSlider);
