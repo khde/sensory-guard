@@ -11,6 +11,10 @@
 #include <X11/extensions/shape.h>
 #endif
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 CensorOverlay::CensorOverlay(QWidget *parent): QWidget(parent) {
 	setWindowFlags(Qt::Tool |
 				   Qt::FramelessWindowHint |
@@ -26,6 +30,9 @@ CensorOverlay::CensorOverlay(QWidget *parent): QWidget(parent) {
 void CensorOverlay::showEvent(QShowEvent *event) {
 	QWidget::showEvent(event);
 	applyX11OverlayHints();
+#ifdef _WIN32
+	SetWindowDisplayAffinity(reinterpret_cast<HWND>(winId()), WDA_EXCLUDEFROMCAPTURE);
+#endif
 }
 
 void CensorOverlay::applyX11OverlayHints() {
