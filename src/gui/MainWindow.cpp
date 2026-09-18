@@ -20,7 +20,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 
-MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new QTabWidget(this)), m_statusLabel(new QLabel(this)), m_overlay(new CensorOverlay(this)) {
+MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new QTabWidget(this)), m_statusLabel(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
     setWindowTitle("Sensory Guard");
     setFixedSize(390, 580);
 
@@ -82,6 +82,11 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     m_statusLabel->setText(m_engine->isActive() ? "Status: active" : "Status: disabled");
 
     setupTrayIcon();
+}
+
+MainWindow::~MainWindow()
+{
+    delete m_overlay;
 }
 
 void MainWindow::setupTrayIcon()

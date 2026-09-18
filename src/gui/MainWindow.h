@@ -13,6 +13,7 @@ class MainWindow : public QMainWindow {
 
 public:
     explicit MainWindow(GuardEngine *engine, QWidget *parent = nullptr);
+    ~MainWindow() override;
 
 private:
     void setupTrayIcon();
