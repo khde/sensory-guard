@@ -20,6 +20,7 @@ CensorOverlay::CensorOverlay(QWidget *parent): QWidget(parent) {
 				   Qt::FramelessWindowHint |
 				   Qt::WindowStaysOnTopHint |
 				   Qt::WindowDoesNotAcceptFocus |
+				   Qt::WindowTransparentForInput |
 				   Qt::X11BypassWindowManagerHint);
 	setAttribute(Qt::WA_NativeWindow);
 	setAttribute(Qt::WA_TranslucentBackground);
@@ -89,8 +90,8 @@ void CensorOverlay::paintEvent(QPaintEvent *event) {
 	Q_UNUSED(event);
 
 	QPainter painter(this);
-	painter.setBrush(Qt::NoBrush);
-	painter.setFont(QFont(QStringLiteral("Sans Serif"), 10));
+	painter.setPen(Qt::NoPen);
+	painter.setBrush(Qt::black);
 
 	for (const DetectionResult &detection : m_detections) {
 		const BoundingBox &box = detection.box;
@@ -106,21 +107,7 @@ void CensorOverlay::paintEvent(QPaintEvent *event) {
 			static_cast<int>((box.x2 - box.x1) * scaleX),
 			static_cast<int>((box.y2 - box.y1) * scaleY));
 		if (rectangle.isValid()) {
-			painter.setPen(QPen(Qt::red, 2));
-			painter.drawRect(rectangle);
-
-			const QString label = QString::fromStdString(detection.entity)
-				+ QStringLiteral(" ")
-				+ QString::number(detection.score * 100.0f, 'f', 1)
-				+ QStringLiteral("%");
-			const QRect labelRectangle = painter.fontMetrics().boundingRect(label).adjusted(-4, -2, 4, 2);
-			const int labelX = rectangle.left();
-			const int labelY = std::max(0, rectangle.top() - labelRectangle.height());
-			const QRect labelBackground(labelX, labelY, labelRectangle.width(), labelRectangle.height());
-
-			painter.fillRect(labelBackground, QColor(0, 0, 0, 190));
-			painter.setPen(Qt::white);
-			painter.drawText(labelBackground, Qt::AlignCenter, label);
+			painter.fillRect(rectangle, Qt::black);
 		}
 	}
 }
