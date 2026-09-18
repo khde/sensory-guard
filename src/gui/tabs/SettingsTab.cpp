@@ -18,8 +18,10 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     m_minimizeToTrayCheckBox->setChecked(true);
     generalLayout->addWidget(m_minimizeToTrayCheckBox);
 
-    QCheckBox *launchOnStartupCheckBox = new QCheckBox("Launch on startup", generalSettings);
-    generalLayout->addWidget(launchOnStartupCheckBox);
+    // Not implemented
+    // QCheckBox *launchOnStartupCheckBox = new QCheckBox("Launch on startup", generalSettings);
+    // generalLayout->addWidget(launchOnStartupCheckBox);
+
     layout->addWidget(generalSettings);
 
     connect(m_minimizeToTrayCheckBox, &QCheckBox::toggled, this, &SettingsTab::minimizeToTrayChanged);
