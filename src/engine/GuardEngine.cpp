@@ -45,6 +45,10 @@ void GuardEngine::stop() {
 
 	m_active = false;
 	m_statsTimer->stop();
+	
+	std::vector<DetectionResult> emptyDetections;
+	emit detectionsUpdated(emptyDetections);
+	
 	emit activeChanged(false);
 }
 
