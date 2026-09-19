@@ -7,6 +7,29 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QSlider>
+#include <QMap>
+
+// Mapping from display names to model label names
+static const QMap<QString, QString> LABEL_MAPPING = {
+    {"Exposed Female Genitalia", "FEMALE_GENITALIA_EXPOSED"},
+    {"Covered Female Genitalia", "FEMALE_GENITALIA_COVERED"},
+    {"Exposed Female Breast", "FEMALE_BREAST_EXPOSED"},
+    {"Covered Female Breast", "FEMALE_BREAST_COVERED"},
+    {"Exposed Buttocks", "BUTTOCKS_EXPOSED"},
+    {"Covered Buttocks", "BUTTOCKS_COVERED"},
+    {"Exposed Male Genitalia", "MALE_GENITALIA_EXPOSED"},
+    {"Exposed Male Breast", "MALE_BREAST_EXPOSED"},
+    {"Exposed Anus", "ANUS_EXPOSED"},
+    {"Covered Anus", "ANUS_COVERED"},
+    {"Exposed Belly", "BELLY_EXPOSED"},
+    {"Covered Belly", "BELLY_COVERED"},
+    {"Exposed Armpits", "ARMPITS_EXPOSED"},
+    {"Covered Armpits", "ARMPITS_COVERED"},
+    {"Exposed Feet", "FEET_EXPOSED"},
+    {"Covered Feet", "FEET_COVERED"},
+    {"Female Face", "FACE_FEMALE"},
+    {"Male Face", "FACE_MALE"}
+};
 
 DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -37,36 +60,36 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
     connect(fpsSlider, &QSlider::valueChanged, this, [this](int) {emitSettingsChanged();});
 
     QStringList exposedLabels = {
-        "FEMALE_GENITALIA_EXPOSED",
-        "FEMALE_BREAST_EXPOSED",
-        "BUTTOCKS_EXPOSED",
-        "MALE_GENITALIA_EXPOSED",
-        "MALE_BREAST_EXPOSED",
-        "ANUS_EXPOSED",
-        "BELLY_EXPOSED",
-        "ARMPITS_EXPOSED",
-        "FEET_EXPOSED"
+        "Exposed Female Genitalia",
+        "Exposed Female Breast",
+        "Exposed Buttocks",
+        "Exposed Male Genitalia",
+        "Exposed Male Breast",
+        "Exposed Anus",
+        "Exposed Belly",
+        "Exposed Armpits",
+        "Exposed Feet"
     };
 
-    QGroupBox *exposedGroup = new QGroupBox("Exposed", this);
+    QGroupBox *exposedGroup = new QGroupBox("Exposed Categories", this);
     QVBoxLayout *exposedLayout = new QVBoxLayout(exposedGroup);
     for (QString &label : exposedLabels)
         addLabelCheckbox(label, true, exposedLayout, exposedGroup);
     layout->addWidget(exposedGroup);
 
     QStringList coveredLabels = {
-        "FEMALE_GENITALIA_COVERED",
-        "FEMALE_BREAST_COVERED",
-        "BUTTOCKS_COVERED",
-        "ANUS_COVERED",
-        "BELLY_COVERED",
-        "ARMPITS_COVERED",
-        "FEET_COVERED",
-        "FACE_FEMALE",
-        "FACE_MALE"
+        "Covered Female Genitalia",
+        "Covered Female Breast",
+        "Covered Buttocks",
+        "Covered Anus",
+        "Covered Belly",
+        "Covered Armpits",
+        "Covered Feet",
+        "Female Face",
+        "Male Face"
     };
 
-    QGroupBox *coveredGroup = new QGroupBox("Covered", this);
+    QGroupBox *coveredGroup = new QGroupBox("Covered Categories", this);
     QVBoxLayout *coveredLayout = new QVBoxLayout(coveredGroup);
     for (QString &label : coveredLabels)
         addLabelCheckbox(label, false, coveredLayout, coveredGroup);
@@ -87,8 +110,12 @@ QCheckBox *DetectionTab::addLabelCheckbox(const QString &label, bool checked, QV
 void DetectionTab::emitSettingsChanged() {
     QStringList enabledLabels;
     for (const QCheckBox *checkBox : m_labelCheckBoxes) {
-        if (checkBox->isChecked())
-            enabledLabels.append(checkBox->text());
+        if (checkBox->isChecked()) {
+            QString displayName = checkBox->text();
+            if (LABEL_MAPPING.contains(displayName)) {
+                enabledLabels.append(LABEL_MAPPING[displayName]);
+            }
+        }
     }
 
     const float confidenceThreshold = sensitivitySlider->value() / 100.0f;
