@@ -12,6 +12,21 @@ CensorTab::CensorTab(QWidget *parent): QWidget(parent) {
     QLabel *title = new QLabel("CENSOR STYLING", this);
     layout->addWidget(title);
 
+    QGroupBox *bboxScaleGroup = new QGroupBox("Censoring box scale", this);
+    QVBoxLayout *bboxScaleLayout = new QVBoxLayout(bboxScaleGroup);
+
+    m_bboxScaleLabel = new QLabel("Scale: 1.00x", this);
+    m_bboxScaleSlider = new QSlider(Qt::Horizontal, this);
+    m_bboxScaleSlider->setRange(50, 200);
+    m_bboxScaleSlider->setValue(100);
+    m_bboxScaleSlider->setTickPosition(QSlider::TicksBelow);
+    m_bboxScaleSlider->setTickInterval(10);
+
+    bboxScaleLayout->addWidget(m_bboxScaleLabel);
+    bboxScaleLayout->addWidget(m_bboxScaleSlider);
+
+    layout->addWidget(bboxScaleGroup);
+
     QGroupBox *censoringGroup = new QGroupBox("Censoring Method", this);
     QVBoxLayout *censoringLayout = new QVBoxLayout(censoringGroup);
 
@@ -39,8 +54,10 @@ CensorTab::CensorTab(QWidget *parent): QWidget(parent) {
 
     connect(m_censoringStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CensorTab::onCensoringStyleChanged);
     connect(m_intensitySlider, &QSlider::valueChanged, this, &CensorTab::updateIntensityLabel);
-    connect(m_intensitySlider, &QSlider::valueChanged, this, [this](int) {emitCensoringConfig();});
-    connect(m_censoringStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) { emitCensoringConfig();});
+    connect(m_intensitySlider, &QSlider::valueChanged, this, [this](int) { emitCensoringConfig(); });
+    connect(m_censoringStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) { emitCensoringConfig(); });
+    connect(m_bboxScaleSlider, &QSlider::valueChanged, this, &CensorTab::updateBboxScaleLabel);
+    connect(m_bboxScaleSlider, &QSlider::valueChanged, this, [this](int) { emitCensoringConfig(); });
 
     layout->addStretch();
 }
@@ -50,7 +67,13 @@ void CensorTab::emitCensoringConfig() {
     config.style = static_cast<CensoringStyle>(m_censoringStyleCombo->currentData().toInt());
     config.blurIntensity = m_intensitySlider->value();
     config.pixelSize = m_intensitySlider->value();
+    config.scaleFactor = m_bboxScaleSlider->value() / 100.0f;  // Convert 50-200 to 0.5-2.0
     emit censoringConfigChanged(config);
+}
+
+void CensorTab::updateBboxScaleLabel(int value) {
+    float scale = value / 100.0f;
+    m_bboxScaleLabel->setText(QString("Scale: %1x").arg(scale, 0, 'f', 2));
 }
 
 void CensorTab::broadcastCurrentSettings() {

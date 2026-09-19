@@ -88,6 +88,7 @@ void CensorOverlay::setSourceFrame(const cv::Mat &frame) {
 
 void CensorOverlay::setCensoringConfig(const CensoringConfig& config) {
 	m_censorStyle->setConfig(config);
+	m_scaleFactor = config.scaleFactor;
 	update();
 }
 
@@ -99,13 +100,41 @@ void CensorOverlay::clearDetections() {
 	update();
 }
 
+BoundingBox CensorOverlay::scaleBoundingBox(const BoundingBox &box, float factor) const {
+	if (factor <= 0.0f)
+		factor = 1.0f;
+
+	// Calculate dimensions
+	int width = box.x2 - box.x1;
+	int height = box.y2 - box.y1;
+	int centerX = box.x1 + width / 2;
+	int centerY = box.y1 + height / 2;
+
+	// Scale dimensions
+	int scaledWidth = static_cast<int>(width * factor);
+	int scaledHeight = static_cast<int>(height * factor);
+
+	// Center-scale: expand from center point
+	BoundingBox scaledBox;
+	scaledBox.x1 = centerX - scaledWidth / 2;
+	scaledBox.y1 = centerY - scaledHeight / 2;
+	scaledBox.x2 = centerX + scaledWidth / 2;
+	scaledBox.y2 = centerY + scaledHeight / 2;
+
+	return scaledBox;
+}
+
 void CensorOverlay::paintBlackCensoringWithQt(QPainter &painter) {
 	// Use Qt painting for black boxes, requiring no frame data
 	painter.setPen(Qt::NoPen);
 	painter.setBrush(Qt::black);
 
 	for (const DetectionResult &detection : m_detections) {
-		const BoundingBox &box = detection.box;
+		BoundingBox box = detection.box;
+
+		if (std::abs(m_scaleFactor - 1.0f) > 0.001f) // Avoid unnecessary scaling when factor is close to 1.0
+			box = scaleBoundingBox(box, m_scaleFactor);
+
 		const double scaleX = m_sourceSize.width() > 0
 			? static_cast<double>(width()) / m_sourceSize.width()
 			: 1.0;
@@ -133,7 +162,10 @@ void CensorOverlay::paintFrameWithCensoring(QPainter &painter) {
 
 	// Process and paint only the detected regions
 	for (const DetectionResult &detection : m_detections) {
-		const BoundingBox &box = detection.box;
+		BoundingBox box = detection.box;
+
+		if (std::abs(m_scaleFactor - 1.0f) > 0.001f)
+			box = scaleBoundingBox(box, m_scaleFactor);
 
 		// Bounds check
 		if (box.x1 < 0 || box.y1 < 0 || box.x2 > m_sourceFrame.cols || box.y2 > m_sourceFrame.rows)

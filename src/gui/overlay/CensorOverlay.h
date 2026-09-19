@@ -32,11 +32,13 @@ private:
     void applyX11OverlayHints();
     void paintBlackCensoringWithQt(QPainter &painter);
     void paintFrameWithCensoring(QPainter &painter);
+    BoundingBox scaleBoundingBox(const BoundingBox &box, float factor) const;
 
     std::vector<DetectionResult> m_detections;
     QSize m_sourceSize;
     cv::Mat m_sourceFrame;
     std::unique_ptr<CensorStyle> m_censorStyle;
+    float m_scaleFactor = 1.0f;
 };
 
 #endif
