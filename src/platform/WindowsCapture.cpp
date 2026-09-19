@@ -11,6 +11,7 @@ WindowsScreenCapture::WindowsScreenCapture(unsigned int outputIndex) {
 }
 
 bool WindowsScreenCapture::initialize(unsigned int outputIndex) {
+    m_outputIndex = outputIndex;
     releaseDuplication();
 
     ComPtr<IDXGIFactory1> factory;
@@ -71,8 +72,11 @@ bool WindowsScreenCapture::createStagingTexture(
 }
 
 bool WindowsScreenCapture::captureFrame(cv::Mat &frame) {
-    if (!m_duplication || !m_context)
-        return false;
+    if (!m_duplication || !m_context) {
+        // Attempt to reinitialize if duplication was lost, eg. screen lock or full screen
+        if (!initialize(m_outputIndex))
+            return false;
+    }
 
     DXGI_OUTDUPL_FRAME_INFO frameInfo{};
     ComPtr<IDXGIResource> desktopResource;

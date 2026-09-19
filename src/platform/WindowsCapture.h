@@ -21,6 +21,7 @@ private:
     bool createStagingTexture(const D3D11_TEXTURE2D_DESC &sourceDescription);
     void releaseDuplication();
 
+    unsigned int m_outputIndex = 0;
     Microsoft::WRL::ComPtr<ID3D11Device> m_device;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context;
     Microsoft::WRL::ComPtr<IDXGIOutputDuplication> m_duplication;

@@ -63,8 +63,12 @@ void GuardEngine::setConfig(const EngineConfig &config) {
 
 void GuardEngine::tick() {
 	cv::Mat capturedFrame;
-	if (!m_capture->captureFrame(capturedFrame))
+	if (!m_capture->captureFrame(capturedFrame)) {
+		// Clear stale detections when frame capture fails
+		std::vector<DetectionResult> emptyDetections;
+		emit detectionsUpdated(emptyDetections);
 		return;
+	}
 
 	cv::Mat bgrFrame;
 	if (capturedFrame.channels() == 4)
