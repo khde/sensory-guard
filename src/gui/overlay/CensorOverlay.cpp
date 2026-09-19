@@ -1,9 +1,12 @@
 #include "CensorOverlay.h"
+#include "CensorStyle.h"
 
 #include <QPainter>
 #include <QPaintEvent>
 #include <QShowEvent>
 #include <QString>
+#include <QImage>
+#include <opencv2/imgproc.hpp>
 
 #ifdef SENSORGUARD_HAS_X11
 #include <X11/Xlib.h>
@@ -15,7 +18,7 @@
 #include <windows.h>
 #endif
 
-CensorOverlay::CensorOverlay(QWidget *parent): QWidget(parent) {
+CensorOverlay::CensorOverlay(QWidget *parent): QWidget(parent), m_censorStyle(std::make_unique<CensorStyle>()) {
 	setWindowFlags(Qt::Tool |
 				   Qt::FramelessWindowHint |
 				   Qt::WindowStaysOnTopHint |
@@ -78,6 +81,16 @@ void CensorOverlay::setSourceSize(const QSize &size) {
 	update();
 }
 
+void CensorOverlay::setSourceFrame(const cv::Mat &frame) {
+	m_sourceFrame = frame.clone();
+	update();
+}
+
+void CensorOverlay::setCensoringConfig(const CensoringConfig& config) {
+	m_censorStyle->setConfig(config);
+	update();
+}
+
 void CensorOverlay::clearDetections() {
 	if (m_detections.empty())
 		return;
@@ -86,10 +99,8 @@ void CensorOverlay::clearDetections() {
 	update();
 }
 
-void CensorOverlay::paintEvent(QPaintEvent *event) {
-	Q_UNUSED(event);
-
-	QPainter painter(this);
+void CensorOverlay::paintBlackCensoringWithQt(QPainter &painter) {
+	// Use Qt painting for black boxes, requiring no frame data
 	painter.setPen(Qt::NoPen);
 	painter.setBrush(Qt::black);
 
@@ -111,3 +122,64 @@ void CensorOverlay::paintEvent(QPaintEvent *event) {
 		}
 	}
 }
+
+void CensorOverlay::paintFrameWithCensoring(QPainter &painter) {
+	// Only paint detected regions, not entire frame!
+	if (m_sourceFrame.empty())
+		return;
+
+	const double scaleX = width() > 0 ? static_cast<double>(width()) / m_sourceSize.width() : 1.0;
+	const double scaleY = height() > 0 ? static_cast<double>(height()) / m_sourceSize.height() : 1.0;
+
+	// Process and paint only the detected regions
+	for (const DetectionResult &detection : m_detections) {
+		const BoundingBox &box = detection.box;
+
+		// Bounds check
+		if (box.x1 < 0 || box.y1 < 0 || box.x2 > m_sourceFrame.cols || box.y2 > m_sourceFrame.rows)
+			continue;
+
+		// Extract region from source frame
+		cv::Rect roi(box.x1, box.y1, box.x2 - box.x1, box.y2 - box.y1);
+		cv::Mat region = m_sourceFrame(roi).clone();
+
+		// Apply censoring using CensorStyle
+		m_censorStyle->applyCensoring(region);
+
+		// Convert region BGR → RGB
+		cv::Mat rgb;
+		cv::cvtColor(region, rgb, cv::COLOR_BGR2RGB);
+
+		// Create QImage from region
+		QImage img(rgb.data, rgb.cols, rgb.rows, rgb.step, QImage::Format_RGB888);
+
+		// Scale if necessary
+		QImage displayImg = img;
+		if (std::abs(scaleX - 1.0) > 0.001 || std::abs(scaleY - 1.0) > 0.001) {
+			displayImg = img.scaledToWidth(static_cast<int>((box.x2 - box.x1) * scaleX), Qt::FastTransformation);
+		}
+
+		// Paint only this region at the correct position
+		int screenX = static_cast<int>(box.x1 * scaleX);
+		int screenY = static_cast<int>(box.y1 * scaleY);
+		painter.drawImage(screenX, screenY, displayImg);
+	}
+}
+
+void CensorOverlay::paintEvent(QPaintEvent *event) {
+	Q_UNUSED(event);
+
+	if (m_detections.empty())
+		return;
+
+	QPainter painter(this);
+
+	if (m_censorStyle->getStyle() == CensoringStyle::Black) {
+		// Black censoring: no frame data needed
+		paintBlackCensoringWithQt(painter);
+	} else {
+		// Blur/Pixelation: use frame-based rendering
+		paintFrameWithCensoring(painter);
+	}
+}
+

@@ -73,6 +73,7 @@ void GuardEngine::tick() {
 		bgrFrame = capturedFrame;
 
 	emit frameSizeChanged(bgrFrame.cols, bgrFrame.rows);
+	emit frameCaptured(bgrFrame);
 	std::vector<DetectionResult> detections = m_detector->detect(bgrFrame, m_config.confidenceThreshold);
 
 	// Only keep user enabled classes

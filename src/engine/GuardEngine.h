@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <opencv2/core/mat.hpp>
 
 class QTimer;
 class OnnxDetector;
@@ -40,6 +41,7 @@ signals:
 	void statsUpdated(int censoredElements, double fps);
 	void frameSizeChanged(int width, int height);
 	void detectionsUpdated(const std::vector<DetectionResult> &detections);
+	void frameCaptured(const cv::Mat &frame);
 	void failed(const QString &message);
 
 private slots:

@@ -7,6 +7,7 @@
 #include "engine/GuardEngine.h"
 #include "engine/EngineConfig.h"
 #include "overlay/CensorOverlay.h"
+#include "overlay/CensoringConfig.h"
 
 #include <QLabel>
 #include <QStyle>
@@ -36,6 +37,7 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     connect(m_engine, &GuardEngine::frameSizeChanged, this, [this](int width, int height) {
         m_overlay->setSourceSize(QSize(width, height));
     });
+    connect(m_engine, &GuardEngine::frameCaptured, m_overlay, &CensorOverlay::setSourceFrame);
     connect(m_engine, &GuardEngine::detectionsUpdated, m_overlay, &CensorOverlay::setDetections);
     connect(m_engine, &GuardEngine::statsUpdated, this, [this](int censoredElements, double) {
         m_statusLabel->setText(QString("Status: active (%1 regions)").arg(censoredElements));
@@ -69,7 +71,13 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
             m_engine->setConfig(config);
         });
     detectionTab->broadcastCurrentSettings();
-    m_tabWidget->addTab(new CustomizeTab(m_tabWidget), "Customize");
+    CustomizeTab *customizeTab = new CustomizeTab(m_tabWidget);
+    m_tabWidget->addTab(customizeTab, "Customize");
+    connect(customizeTab, &CustomizeTab::censoringConfigChanged, this,
+        [this](const CensoringConfig& config) {
+            m_overlay->setCensoringConfig(config);
+        });
+    customizeTab->broadcastCurrentSettings();
     SettingsTab *settingsTab = new SettingsTab(m_tabWidget);
     m_tabWidget->addTab(settingsTab, "Settings");
     connect(settingsTab, &SettingsTab::minimizeToTrayChanged, this, [this](bool enabled) {
@@ -84,13 +92,11 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     setupTrayIcon();
 }
 
-MainWindow::~MainWindow()
-{
+MainWindow::~MainWindow() {
     delete m_overlay;
 }
 
-void MainWindow::setupTrayIcon()
-{
+void MainWindow::setupTrayIcon() {
     m_trayIcon = new QSystemTrayIcon(this);
     m_trayIcon->setIcon(style()->standardIcon(QStyle::SP_ComputerIcon));
     m_trayIcon->setToolTip("Sensory Guard");
@@ -119,8 +125,7 @@ void MainWindow::setupTrayIcon()
     m_trayIcon->show();
 }
 
-void MainWindow::closeEvent(QCloseEvent *event)
-{
+void MainWindow::closeEvent(QCloseEvent *event) {
     if (m_minimizeToTray) {
         hide();
         event->ignore();
