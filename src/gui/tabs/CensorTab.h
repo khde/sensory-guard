@@ -1,5 +1,5 @@
-#ifndef CUSTOMIZETAB_H
-#define CUSTOMIZETAB_H
+#ifndef CENSORTAB_H
+#define CENSORTAB_H
 
 #include "gui/overlay/CensoringConfig.h"
 
@@ -8,11 +8,11 @@
 #include <QSlider>
 #include <QLabel>
 
-class CustomizeTab : public QWidget {
+class CensorTab : public QWidget {
     Q_OBJECT
 
 public:
-    explicit CustomizeTab(QWidget *parent = nullptr);
+    explicit CensorTab(QWidget *parent = nullptr);
     void broadcastCurrentSettings();
 
 private:

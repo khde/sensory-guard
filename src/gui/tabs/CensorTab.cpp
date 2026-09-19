@@ -1,4 +1,4 @@
-#include "CustomizeTab.h"
+#include "CensorTab.h"
 
 #include <QLabel>
 #include <QVBoxLayout>
@@ -6,7 +6,7 @@
 #include <QComboBox>
 #include <QSlider>
 
-CustomizeTab::CustomizeTab(QWidget *parent): QWidget(parent) {
+CensorTab::CensorTab(QWidget *parent): QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     QLabel *title = new QLabel("CENSOR STYLING", this);
@@ -37,15 +37,15 @@ CustomizeTab::CustomizeTab(QWidget *parent): QWidget(parent) {
 
     layout->addWidget(censoringGroup);
 
-    connect(m_censoringStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CustomizeTab::onCensoringStyleChanged);
-    connect(m_intensitySlider, &QSlider::valueChanged, this, &CustomizeTab::updateIntensityLabel);
+    connect(m_censoringStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CensorTab::onCensoringStyleChanged);
+    connect(m_intensitySlider, &QSlider::valueChanged, this, &CensorTab::updateIntensityLabel);
     connect(m_intensitySlider, &QSlider::valueChanged, this, [this](int) {emitCensoringConfig();});
     connect(m_censoringStyleCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) { emitCensoringConfig();});
 
     layout->addStretch();
 }
 
-void CustomizeTab::emitCensoringConfig() {
+void CensorTab::emitCensoringConfig() {
     CensoringConfig config;
     config.style = static_cast<CensoringStyle>(m_censoringStyleCombo->currentData().toInt());
     config.blurIntensity = m_intensitySlider->value();
@@ -53,11 +53,11 @@ void CustomizeTab::emitCensoringConfig() {
     emit censoringConfigChanged(config);
 }
 
-void CustomizeTab::broadcastCurrentSettings() {
+void CensorTab::broadcastCurrentSettings() {
     emitCensoringConfig();
 }
 
-void CustomizeTab::onCensoringStyleChanged(int index) {
+void CensorTab::onCensoringStyleChanged(int index) {
     int style = m_censoringStyleCombo->itemData(index).toInt();
     
     if (style == static_cast<int>(CensoringStyle::Black)) {
@@ -76,7 +76,7 @@ void CustomizeTab::onCensoringStyleChanged(int index) {
     }
 }
 
-void CustomizeTab::updateIntensityLabel(int value) {
+void CensorTab::updateIntensityLabel(int value) {
     int style = m_censoringStyleCombo->currentData().toInt();
     
     if (style == static_cast<int>(CensoringStyle::GaussianBlur)) {

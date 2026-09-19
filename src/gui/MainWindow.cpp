@@ -2,7 +2,7 @@
 
 #include "tabs/HomeTab.h"
 #include "tabs/DetectionTab.h"
-#include "tabs/CustomizeTab.h"
+#include "tabs/CensorTab.h"
 #include "tabs/SettingsTab.h"
 #include "engine/GuardEngine.h"
 #include "engine/EngineConfig.h"
@@ -71,13 +71,13 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
             m_engine->setConfig(config);
         });
     detectionTab->broadcastCurrentSettings();
-    CustomizeTab *customizeTab = new CustomizeTab(m_tabWidget);
-    m_tabWidget->addTab(customizeTab, "Customize");
-    connect(customizeTab, &CustomizeTab::censoringConfigChanged, this,
+    CensorTab *censorTab = new CensorTab(m_tabWidget);
+    m_tabWidget->addTab(censorTab, "Censor");
+    connect(censorTab, &CensorTab::censoringConfigChanged, this,
         [this](const CensoringConfig& config) {
             m_overlay->setCensoringConfig(config);
         });
-    customizeTab->broadcastCurrentSettings();
+    censorTab->broadcastCurrentSettings();
     SettingsTab *settingsTab = new SettingsTab(m_tabWidget);
     m_tabWidget->addTab(settingsTab, "Settings");
     connect(settingsTab, &SettingsTab::minimizeToTrayChanged, this, [this](bool enabled) {
