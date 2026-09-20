@@ -5,6 +5,7 @@
 
 class GuardEngine;
 class QPushButton;
+class QLabel;
 
 class HomeTab : public QWidget {
     Q_OBJECT
@@ -14,10 +15,12 @@ public:
 
 private slots:
     void updateActiveState(bool active);
+    void updateFps(double currentFps, double targetFps);
 
 private:
     GuardEngine *m_engine;
     QPushButton *m_activateButton;
+    QLabel *m_fpsLabel;
 };
 
 #endif

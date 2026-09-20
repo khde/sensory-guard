@@ -18,14 +18,16 @@ GuardEngine::GuardEngine(const std::string &modelPath, QObject *parent)
 	: QObject(parent),
 	  m_statsTimer(new QTimer(this)),
 	  m_detector(std::make_unique<OnnxDetector>(modelPath)) {
-	#ifdef _WIN32
+#ifdef _WIN32
 	m_capture = std::make_unique<WindowsScreenCapture>();
-	#elif defined(SENSORGUARD_HAS_X11)
+#elif defined(SENSORGUARD_HAS_X11)
 	m_capture = std::make_unique<LinuxScreenCapture>();
-	#endif
+#endif
 
 	connect(m_statsTimer, &QTimer::timeout, this, &GuardEngine::tick);
 	m_statsTimer->setInterval(1000 / m_config.maxFps);
+
+	m_lastStatsTime = std::chrono::high_resolution_clock::now();
 }
 
 GuardEngine::~GuardEngine() = default;
@@ -95,4 +97,19 @@ void GuardEngine::tick() {
 	emit detectionsUpdated(detections);
 	m_censoredElements = static_cast<int>(detections.size());
 	emit statsUpdated(m_censoredElements, m_config.maxFps);
+
+	// Track FPS
+	m_frameCount++;
+	auto now = std::chrono::high_resolution_clock::now();
+	auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(now - m_lastStatsTime).count();
+
+	// Emit FPS around every 1000 ms
+	if (elapsedMs >= 1000) {
+		m_measuredFps = (m_frameCount * 1000.0) / elapsedMs;
+		emit fpsUpdated(m_measuredFps, static_cast<double>(m_config.maxFps));
+
+		// Reset counters
+		m_frameCount = 0;
+		m_lastStatsTime = now;
+	}
 }

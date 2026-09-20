@@ -6,21 +6,23 @@
 #include <QPushButton>
 #include <QStyle>
 #include <QVBoxLayout>
+#include <QGroupBox>
 
-HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engine(engine), m_activateButton(new QPushButton(this)) {
+HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engine(engine), m_activateButton(new QPushButton(this)), m_fpsLabel(new QLabel("FPS: 0.00/0", this)) {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     QLabel *heading = new QLabel("GUARD OVERVIEW", this);
     layout->addWidget(heading);
 
-    QWidget *shieldCard = new QWidget(this);
-    QVBoxLayout *shieldLayout = new QVBoxLayout(shieldCard);
-    shieldLayout->setContentsMargins(12, 12, 12, 12);
-    shieldLayout->setSpacing(10);
-
     m_activateButton->setMinimumHeight(54);
-    shieldLayout->addWidget(m_activateButton);
-    layout->addWidget(shieldCard);
+    layout->addWidget(m_activateButton);
+
+    // System Stats
+    QGroupBox *statsGroup = new QGroupBox("System Stats", this);
+    QVBoxLayout *statsLayout = new QVBoxLayout(statsGroup);
+    statsLayout->addWidget(m_fpsLabel);
+    layout->addWidget(statsGroup);
+
     layout->addStretch();
 
     connect(m_activateButton, &QPushButton::clicked, this, [this] {
@@ -30,6 +32,7 @@ HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engin
             m_engine->start();
     });
     connect(m_engine, &GuardEngine::activeChanged, this, &HomeTab::updateActiveState);
+    connect(m_engine, &GuardEngine::fpsUpdated, this, &HomeTab::updateFps);
 
     updateActiveState(m_engine->isActive());
 }
@@ -39,4 +42,8 @@ void HomeTab::updateActiveState(bool active) {
     m_activateButton->setProperty("active", active);
     m_activateButton->style()->unpolish(m_activateButton);
     m_activateButton->style()->polish(m_activateButton);
+}
+
+void HomeTab::updateFps(double currentFps, double targetFps) {
+    m_fpsLabel->setText(QString("FPS: %1/%2").arg(currentFps, 0, 'f', 2).arg(static_cast<int>(targetFps)));
 }

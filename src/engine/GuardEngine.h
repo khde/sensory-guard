@@ -8,6 +8,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
 #include <opencv2/core/mat.hpp>
 
 class QTimer;
@@ -36,9 +37,15 @@ private:
 	std::unique_ptr<IScreenCapture> m_capture;
 	std::unique_ptr<OnnxDetector> m_detector;
 
+	// FPS tracking
+	int m_frameCount = 0;
+	std::chrono::high_resolution_clock::time_point m_lastStatsTime;
+	double m_measuredFps = 0.0;
+
 signals:
 	void activeChanged(bool active);
 	void statsUpdated(int censoredElements, double fps);
+	void fpsUpdated(double currentFps, double targetFps);
 	void frameSizeChanged(int width, int height);
 	void detectionsUpdated(const std::vector<DetectionResult> &detections);
 	void frameCaptured(const cv::Mat &frame);
