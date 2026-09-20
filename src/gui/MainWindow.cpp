@@ -21,6 +21,10 @@
 #include <QGuiApplication>
 #include <QScreen>
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
+
 MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new QTabWidget(this)), m_statusLabel(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
     setWindowTitle("Sensory Guard");
     setFixedSize(390, 580);
@@ -33,6 +37,9 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
         m_statusLabel->setProperty("active", active);
         m_statusLabel->style()->unpolish(m_statusLabel);
         m_statusLabel->style()->polish(m_statusLabel);
+        if (m_toggleAction) {
+            m_toggleAction->setText(active ? "Deactivate" : "Activate");
+        }
     });
     connect(m_engine, &GuardEngine::frameSizeChanged, this, [this](int width, int height) {
         m_overlay->setSourceSize(QSize(width, height));
@@ -102,35 +109,62 @@ void MainWindow::setupTrayIcon() {
     m_trayIcon->setToolTip("Sensory Guard");
 
     QMenu *trayMenu = new QMenu(this);
-    QAction *showAction = trayMenu->addAction("Open");
-    QAction *quitAction = trayMenu->addAction("Quit");
+    QAction *showAction = trayMenu->addAction("Sensor Guard");
+    m_toggleAction = trayMenu->addAction(m_engine->isActive() ? "Deactivate" : "Activate");
+    trayMenu->addSeparator();
+    QAction *exitAction = trayMenu->addAction("Exit");
     m_trayIcon->setContextMenu(trayMenu);
 
-    connect(showAction, &QAction::triggered, this, [this] {
-        show();
-        raise();
-        activateWindow();
+    connect(showAction, &QAction::triggered, this, &MainWindow::bringToForeground);
+    connect(m_toggleAction, &QAction::triggered, this, [this] {
+        if (m_engine->isActive()) {
+            m_engine->stop();
+        } else {
+            m_engine->start();
+        }
     });
-    connect(quitAction, &QAction::triggered, qApp, &QApplication::quit);
+    connect(exitAction, &QAction::triggered, qApp, &QApplication::exit);
 
-    // Show window on left click
+    // Bring the window to front on left click
     connect(m_trayIcon, &QSystemTrayIcon::activated, this, [this](QSystemTrayIcon::ActivationReason reason) {
         if (reason == QSystemTrayIcon::Trigger) {
-            show();
-            raise();
-            activateWindow();
+            bringToForeground();
         }
     });
 
     m_trayIcon->show();
 }
 
+void MainWindow::bringToForeground() {
+    if (isMinimized()) {
+        showNormal();
+    }
+    else {
+        show();
+    }
+    raise();
+    activateWindow();
+
+#ifdef _WIN32
+    // Windows might not put it in the foreground
+    HWND targetWindow = reinterpret_cast<HWND>(winId());
+    HWND foregroundWindow = GetForegroundWindow();
+    DWORD targetThreadId = GetCurrentThreadId();
+    DWORD foregroundThreadId = foregroundWindow ? GetWindowThreadProcessId(foregroundWindow, nullptr) : 0;
+
+    bool attached = foregroundThreadId && foregroundThreadId != targetThreadId && AttachThreadInput(foregroundThreadId, targetThreadId, TRUE);
+    SetForegroundWindow(targetWindow);
+    if (attached) {
+        AttachThreadInput(foregroundThreadId, targetThreadId, FALSE);
+    }
+#endif
+}
+
 void MainWindow::closeEvent(QCloseEvent *event) {
     if (m_minimizeToTray) {
         hide();
         event->ignore();
-    }
-    else {
+    } else {
         event->accept();
     }
 }
