@@ -5,6 +5,7 @@
 
 class GuardEngine;
 class CensorOverlay;
+class AboutWindow;
 class QLabel;
 class QSystemTrayIcon;
 class QAction;
@@ -19,8 +20,10 @@ public:
 private:
     void setupTrayIcon();
     void bringToForeground();
+    void showAboutWindow();
 
     GuardEngine *m_engine;
+    AboutWindow *m_aboutWindow = nullptr;
     QTabWidget *m_tabWidget;
     QLabel *m_statusLabel;
     bool m_minimizeToTray = false;

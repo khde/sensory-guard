@@ -56,6 +56,8 @@ add_executable(SensorGuard
     src/main.cpp
     src/gui/MainWindow.h
     src/gui/MainWindow.cpp
+    src/gui/AboutWindow.h
+    src/gui/AboutWindow.cpp
     src/gui/tabs/HomeTab.h
     src/gui/tabs/HomeTab.cpp
     src/gui/tabs/DetectionTab.h

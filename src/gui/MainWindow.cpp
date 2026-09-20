@@ -4,6 +4,7 @@
 #include "tabs/DetectionTab.h"
 #include "tabs/CensorTab.h"
 #include "tabs/SettingsTab.h"
+#include "AboutWindow.h"
 #include "engine/GuardEngine.h"
 #include "engine/EngineConfig.h"
 #include "overlay/CensorOverlay.h"
@@ -20,6 +21,7 @@
 #include <QApplication>
 #include <QGuiApplication>
 #include <QScreen>
+#include <QPushButton>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -31,7 +33,11 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
 
     setCentralWidget(m_tabWidget);
     statusBar()->addWidget(m_statusLabel);
-    statusBar()->addPermanentWidget(new QLabel("Sensory Guard v0.1.0", this));
+    QPushButton *aboutButton = new QPushButton("Sensory Guard v0.1.0", this);
+    aboutButton->setFlat(true);
+    aboutButton->setCursor(Qt::PointingHandCursor);
+    statusBar()->addPermanentWidget(aboutButton);
+    connect(aboutButton, &QPushButton::clicked, this, &MainWindow::showAboutWindow);
     connect(m_engine, &GuardEngine::activeChanged, this, [this](bool active) {
         m_statusLabel->setText(active ? "Status: active" : "Status: disabled");
         m_statusLabel->setProperty("active", active);
@@ -167,4 +173,13 @@ void MainWindow::closeEvent(QCloseEvent *event) {
     } else {
         event->accept();
     }
+}
+
+void MainWindow::showAboutWindow() {
+    if (!m_aboutWindow) {
+        m_aboutWindow = new AboutWindow("0.1.0", this);
+    }
+    m_aboutWindow->show();
+    m_aboutWindow->raise();
+    m_aboutWindow->activateWindow();
 }
