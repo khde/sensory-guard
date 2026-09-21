@@ -34,6 +34,7 @@ CensorTab::CensorTab(QWidget *parent): QWidget(parent) {
     m_censoringStyleCombo = new QComboBox(this);
     m_censoringStyleCombo->addItem("Black Box", static_cast<int>(CensoringStyle::Black));
     m_censoringStyleCombo->addItem("Gaussian Blur", static_cast<int>(CensoringStyle::GaussianBlur));
+    m_censoringStyleCombo->addItem("Box Blur", static_cast<int>(CensoringStyle::BoxBlur));
     m_censoringStyleCombo->addItem("Pixelation", static_cast<int>(CensoringStyle::Pixelation));
     m_censoringStyleCombo->setCurrentIndex(0);
 
@@ -86,7 +87,7 @@ void CensorTab::onCensoringStyleChanged(int index) {
     if (style == static_cast<int>(CensoringStyle::Black)) {
         m_intensityLabel->setVisible(false);
         m_intensitySlider->setVisible(false);
-    } else if (style == static_cast<int>(CensoringStyle::GaussianBlur)) {
+    } else if (style == static_cast<int>(CensoringStyle::GaussianBlur) || style == static_cast<int>(CensoringStyle::BoxBlur)) {
         m_intensityLabel->setVisible(true);
         m_intensitySlider->setVisible(true);
         m_intensityLabel->setText("Blur Intensity: " + QString::number(m_intensitySlider->value()));

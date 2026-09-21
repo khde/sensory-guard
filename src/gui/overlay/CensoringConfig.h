@@ -4,6 +4,7 @@
 enum class CensoringStyle {
     Black,
     GaussianBlur,
+    BoxBlur,
     Pixelation
 };
 

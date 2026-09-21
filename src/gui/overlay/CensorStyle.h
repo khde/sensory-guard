@@ -16,7 +16,8 @@ public:
 
 private:
     void applyBlack(cv::Mat& region);
-    void applyBlur(cv::Mat& region);
+    void applyGaussianBlur(cv::Mat& region);
+    void applyBoxBlur(cv::Mat& region);
     void applyPixelate(cv::Mat& region);
 
     CensoringConfig m_config;
