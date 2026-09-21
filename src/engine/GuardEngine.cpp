@@ -95,8 +95,6 @@ void GuardEngine::tick() {
 		detections.end());
 
 	emit detectionsUpdated(detections);
-	m_censoredElements = static_cast<int>(detections.size());
-	emit statsUpdated(m_censoredElements, m_config.maxFps);
 
 	// Track FPS
 	m_frameCount++;

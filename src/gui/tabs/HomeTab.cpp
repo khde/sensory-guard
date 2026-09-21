@@ -8,7 +8,7 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 
-HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engine(engine), m_activateButton(new QPushButton(this)), m_fpsLabel(new QLabel("FPS: 0.00/0", this)) {
+HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engine(engine), m_activateButton(new QPushButton(this)), m_fpsLabel(new QLabel("Current: 0.00 FPS  |  Target: 0 FPS", this)) {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     QLabel *heading = new QLabel("GUARD OVERVIEW", this);
@@ -18,7 +18,7 @@ HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engin
     layout->addWidget(m_activateButton);
 
     // System Stats
-    QGroupBox *statsGroup = new QGroupBox("System Stats", this);
+    QGroupBox *statsGroup = new QGroupBox("System Metrics", this);
     QVBoxLayout *statsLayout = new QVBoxLayout(statsGroup);
     statsLayout->addWidget(m_fpsLabel);
     layout->addWidget(statsGroup);
@@ -45,5 +45,5 @@ void HomeTab::updateActiveState(bool active) {
 }
 
 void HomeTab::updateFps(double currentFps, double targetFps) {
-    m_fpsLabel->setText(QString("FPS: %1/%2").arg(currentFps, 0, 'f', 2).arg(static_cast<int>(targetFps)));
+    m_fpsLabel->setText(QString("Current: %1 FPS  |  Target: %2 FPS").arg(currentFps, 0, 'f', 2).arg(static_cast<int>(targetFps)));
 }

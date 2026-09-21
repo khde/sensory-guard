@@ -52,9 +52,6 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     });
     connect(m_engine, &GuardEngine::frameCaptured, m_overlay, &CensorOverlay::setSourceFrame);
     connect(m_engine, &GuardEngine::detectionsUpdated, m_overlay, &CensorOverlay::setDetections);
-    connect(m_engine, &GuardEngine::statsUpdated, this, [this](int censoredElements, double) {
-        m_statusLabel->setText(QString("Status: active (%1 regions)").arg(censoredElements));
-    });
     connect(m_engine, &GuardEngine::activeChanged, m_overlay, [this](bool active) {
         if (active) {
             if (QScreen *screen = QGuiApplication::primaryScreen())
@@ -116,6 +113,7 @@ void MainWindow::setupTrayIcon() {
 
     QMenu *trayMenu = new QMenu(this);
     QAction *showAction = trayMenu->addAction("Sensor Guard");
+    trayMenu->addSeparator();
     m_toggleAction = trayMenu->addAction(m_engine->isActive() ? "Deactivate" : "Activate");
     trayMenu->addSeparator();
     QAction *exitAction = trayMenu->addAction("Exit");
