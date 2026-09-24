@@ -28,12 +28,12 @@
 #endif
 
 MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new QTabWidget(this)), m_statusLabel(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
-    setWindowTitle("Sensory Guard");
+    setWindowTitle("Sensor Guard");
     setFixedSize(390, 580);
 
     setCentralWidget(m_tabWidget);
     statusBar()->addWidget(m_statusLabel);
-    QPushButton *aboutButton = new QPushButton("Sensory Guard v0.1.0", this);
+    QPushButton *aboutButton = new QPushButton("Sensor Guard v0.1.0", this);
     aboutButton->setFlat(true);
     aboutButton->setCursor(Qt::PointingHandCursor);
     statusBar()->addPermanentWidget(aboutButton);
@@ -109,7 +109,7 @@ MainWindow::~MainWindow() {
 void MainWindow::setupTrayIcon() {
     m_trayIcon = new QSystemTrayIcon(this);
     m_trayIcon->setIcon(style()->standardIcon(QStyle::SP_ComputerIcon));
-    m_trayIcon->setToolTip("Sensory Guard");
+    m_trayIcon->setToolTip("Sensor Guard");
 
     QMenu *trayMenu = new QMenu(this);
     QAction *showAction = trayMenu->addAction("Sensor Guard");
