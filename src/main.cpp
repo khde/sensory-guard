@@ -7,6 +7,8 @@
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
+    QCoreApplication::setOrganizationName("SensorGuard");
+    QCoreApplication::setApplicationName("SensorGuard");
 
     const QString modelPath = QDir(QCoreApplication::applicationDirPath()).filePath("data/models/640m.onnx");
     GuardEngine engine(modelPath.toStdString());

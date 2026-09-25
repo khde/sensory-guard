@@ -22,6 +22,7 @@
 #include <QGuiApplication>
 #include <QScreen>
 #include <QPushButton>
+#include <QStringList>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -30,6 +31,8 @@
 MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new QTabWidget(this)), m_statusLabel(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
     setWindowTitle("Sensor Guard");
     setFixedSize(390, 580);
+
+    m_userSettings = UserSettings::load();
 
     setCentralWidget(m_tabWidget);
     statusBar()->addWidget(m_statusLabel);
@@ -68,32 +71,20 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
 
     // Tabs
     m_tabWidget->addTab(new HomeTab(m_engine, m_tabWidget), "Home");
-    DetectionTab *detectionTab = new DetectionTab(m_tabWidget);
-    m_tabWidget->addTab(detectionTab, "Detection");
-    connect(detectionTab, &DetectionTab::settingsChanged, this,
-        [this](float confidenceThreshold, const QStringList &enabledLabels, int maxFps) {
-            EngineConfig config = m_engine->config();
-            config.confidenceThreshold = confidenceThreshold;
-            config.maxFps = maxFps;
-            config.enabledLabels.clear();
-            for (const QString &label : enabledLabels)
-                config.enabledLabels.insert(label.toStdString());
-            m_engine->setConfig(config);
-        });
-    detectionTab->broadcastCurrentSettings();
-    CensorTab *censorTab = new CensorTab(m_tabWidget);
-    m_tabWidget->addTab(censorTab, "Censor");
-    connect(censorTab, &CensorTab::censoringConfigChanged, this,
-        [this](const CensoringConfig& config) {
-            m_overlay->setCensoringConfig(config);
-        });
-    censorTab->broadcastCurrentSettings();
-    SettingsTab *settingsTab = new SettingsTab(m_tabWidget);
-    m_tabWidget->addTab(settingsTab, "Settings");
-    connect(settingsTab, &SettingsTab::minimizeToTrayChanged, this, [this](bool enabled) {
-        m_minimizeToTray = enabled;
-    });
-    m_minimizeToTray = settingsTab->minimizeToTrayEnabled();
+    m_detectionTab = new DetectionTab(m_tabWidget);
+    m_tabWidget->addTab(m_detectionTab, "Detection");
+    m_detectionTab->setSettings(m_userSettings);
+    connect(m_detectionTab, &DetectionTab::settingsChanged, this, &MainWindow::updateDetectionSettings);
+    m_censorTab = new CensorTab(m_tabWidget);
+    m_tabWidget->addTab(m_censorTab, "Censor");
+    m_censorTab->setSettings(m_userSettings);
+    connect(m_censorTab, &CensorTab::settingsChanged, this, &MainWindow::updateCensorSettings);
+    m_settingsTab = new SettingsTab(m_tabWidget);
+    m_tabWidget->addTab(m_settingsTab, "Settings");
+    m_settingsTab->setSettings(m_userSettings);
+    connect(m_settingsTab, &SettingsTab::settingsChanged, this, &MainWindow::updateGeneralSettings);
+
+    applyUserSettings();
 
     m_tabWidget->setCurrentIndex(0);
 
@@ -104,6 +95,48 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
 
 MainWindow::~MainWindow() {
     delete m_overlay;
+}
+
+void MainWindow::applyUserSettings() {
+    EngineConfig engineConfig = m_engine->config();
+    engineConfig.confidenceThreshold = m_userSettings.sensitivity;
+    engineConfig.maxFps = m_userSettings.maximumFps;
+    engineConfig.enabledLabels.clear();
+    for (const QString &label : m_userSettings.enabledLabels) {
+        engineConfig.enabledLabels.insert(label.toStdString());
+    }
+    m_engine->setConfig(engineConfig);
+
+    CensoringConfig censoringConfig;
+    censoringConfig.style = static_cast<CensoringStyle>(m_userSettings.censorStyle);
+    censoringConfig.blurIntensity = m_userSettings.censorIntensity;
+    censoringConfig.pixelSize = m_userSettings.censorIntensity;
+    censoringConfig.scaleFactor = m_userSettings.censorScale;
+    m_overlay->setCensoringConfig(censoringConfig);
+
+    m_minimizeToTray = m_userSettings.minimizeToTray;
+}
+
+void MainWindow::updateDetectionSettings(float sensitivity, const QStringList &enabledLabels, int maximumFps) {
+    m_userSettings.sensitivity = sensitivity;
+    m_userSettings.enabledLabels = enabledLabels;
+    m_userSettings.maximumFps = maximumFps;
+    applyUserSettings();
+    m_userSettings.save();
+}
+
+void MainWindow::updateCensorSettings(int style, int intensity, float scale) {
+    m_userSettings.censorStyle = style;
+    m_userSettings.censorIntensity = intensity;
+    m_userSettings.censorScale = scale;
+    applyUserSettings();
+    m_userSettings.save();
+}
+
+void MainWindow::updateGeneralSettings(bool minimizeToTray) {
+    m_userSettings.minimizeToTray = minimizeToTray;
+    applyUserSettings();
+    m_userSettings.save();
 }
 
 void MainWindow::setupTrayIcon() {

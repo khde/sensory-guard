@@ -1,7 +1,7 @@
 #ifndef CENSORTAB_H
 #define CENSORTAB_H
 
-#include "gui/overlay/CensoringConfig.h"
+#include "config/UserSettings.h"
 
 #include <QWidget>
 #include <QComboBox>
@@ -13,13 +13,13 @@ class CensorTab : public QWidget {
 
 public:
     explicit CensorTab(QWidget *parent = nullptr);
-    void broadcastCurrentSettings();
+    void setSettings(const UserSettings &settings);
 
 private:
     void updateIntensityLabel(int value);
     void updateBboxScaleLabel(int value);
     void onCensoringStyleChanged(int index);
-    void emitCensoringConfig();
+    void emitSettingsChanged();
 
     QComboBox *m_censoringStyleCombo;
     QSlider *m_intensitySlider;
@@ -28,7 +28,7 @@ private:
     QLabel *m_bboxScaleLabel;
 
 signals:
-    void censoringConfigChanged(const CensoringConfig& config);
+    void settingsChanged(int style, int intensity, float scale);
 };
 
 #endif

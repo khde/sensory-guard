@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <QGroupBox>
 #include <QCheckBox>
+#include <QSignalBlocker>
 
 SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -24,12 +25,15 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
 
     layout->addWidget(generalSettings);
 
-    connect(m_minimizeToTrayCheckBox, &QCheckBox::toggled, this, &SettingsTab::minimizeToTrayChanged);
+    connect(m_minimizeToTrayCheckBox, &QCheckBox::toggled, this, [this](bool) {
+        emit settingsChanged(m_minimizeToTrayCheckBox->isChecked());
+    });
 
     layout->addStretch();
 }
 
-bool SettingsTab::minimizeToTrayEnabled() const
+void SettingsTab::setSettings(const UserSettings &settings)
 {
-    return m_minimizeToTrayCheckBox->isChecked();
+    const QSignalBlocker blocker(this);
+    m_minimizeToTrayCheckBox->setChecked(settings.minimizeToTray);
 }

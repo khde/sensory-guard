@@ -8,6 +8,7 @@
 #include <QHBoxLayout>
 #include <QSlider>
 #include <QMap>
+#include <QSignalBlocker>
 
 // Mapping from display names to model label names
 static const QMap<QString, QString> LABEL_MAPPING = {
@@ -98,6 +99,17 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
     layout->addStretch();
 }
 
+void DetectionTab::setSettings(const UserSettings &settings) {
+    const QSignalBlocker blocker(this);
+    sensitivitySlider->setValue(qBound(1, qRound(settings.sensitivity * 100.0f), 100));
+    fpsSlider->setValue(qBound(1, settings.maximumFps, 60));
+
+    for (QCheckBox *checkBox : m_labelCheckBoxes) {
+        const QString modelLabel = LABEL_MAPPING.value(checkBox->text());
+        checkBox->setChecked(settings.enabledLabels.contains(modelLabel));
+    }
+}
+
 QCheckBox *DetectionTab::addLabelCheckbox(const QString &label, bool checked, QVBoxLayout *layout, QWidget *parent) {
     QCheckBox *checkBox = new QCheckBox(label, parent);
     checkBox->setChecked(checked);
@@ -117,14 +129,10 @@ void DetectionTab::emitSettingsChanged() {
             }
         }
     }
-
-    const float confidenceThreshold = sensitivitySlider->value() / 100.0f;
-    const int maxFps = fpsSlider->value();
-    emit settingsChanged(confidenceThreshold, enabledLabels, maxFps);
-}
-
-void DetectionTab::broadcastCurrentSettings() {
-    emitSettingsChanged();
+    emit settingsChanged(
+        sensitivitySlider->value() / 100.0f,
+        enabledLabels,
+        fpsSlider->value());
 }
 
 void DetectionTab::updateSensitivityLabel(int value) {

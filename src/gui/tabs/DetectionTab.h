@@ -1,6 +1,8 @@
 #ifndef DETECTIONTAB_H
 #define DETECTIONTAB_H
 
+#include "config/UserSettings.h"
+
 #include <QWidget>
 #include <QSlider>
 #include <QStringList>
@@ -16,10 +18,10 @@ class DetectionTab : public QWidget {
 public:
     explicit DetectionTab(QWidget *parent = nullptr);
 
-    void broadcastCurrentSettings();
+    void setSettings(const UserSettings &settings);
 
 signals:
-    void settingsChanged(float confidenceThreshold, const QStringList &enabledLabels, int maxFps);
+    void settingsChanged(float sensitivity, const QStringList &enabledLabels, int maximumFps);
 
 private:
     void updateSensitivityLabel(int value);
