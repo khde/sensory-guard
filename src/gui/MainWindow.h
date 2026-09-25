@@ -29,7 +29,7 @@ private:
     void applyUserSettings();
     void updateDetectionSettings(float sensitivity, const QStringList &enabledLabels, int maximumFps);
     void updateCensorSettings(int style, int intensity, float scale);
-    void updateGeneralSettings(bool minimizeToTray);
+    void updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold);
 
     GuardEngine *m_engine;
     UserSettings m_userSettings;

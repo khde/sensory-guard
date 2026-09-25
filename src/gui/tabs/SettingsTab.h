@@ -5,6 +5,7 @@
 
 #include <QWidget>
 #include <QCheckBox>
+#include <QSlider>
 
 class SettingsTab : public QWidget {
     Q_OBJECT
@@ -14,10 +15,16 @@ public:
     void setSettings(const UserSettings &settings);
 
 private:
+	void updateFrameChangeLabel(int value);
+	void updateFrameChangeControls();
+
     QCheckBox *m_minimizeToTrayCheckBox;
+    QCheckBox *m_ignoreSmallScreenChangesCheckBox;
+    QLabel *m_frameChangeLabel;
+    QSlider *m_frameChangeSlider;
 
 signals:
-    void settingsChanged(bool minimizeToTray);
+    void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold);
 };
 
 #endif

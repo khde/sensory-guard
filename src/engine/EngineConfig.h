@@ -6,6 +6,8 @@
 
 struct EngineConfig {
     float confidenceThreshold = 0.20f;
+    bool ignoreSmallScreenChanges = true;
+    float frameChangeThreshold = 0.015f;
     std::unordered_set<std::string> enabledLabels;
     int maxFps = 12;
 };

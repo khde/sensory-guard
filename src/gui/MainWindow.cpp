@@ -100,6 +100,8 @@ MainWindow::~MainWindow() {
 void MainWindow::applyUserSettings() {
     EngineConfig engineConfig = m_engine->config();
     engineConfig.confidenceThreshold = m_userSettings.sensitivity;
+    engineConfig.ignoreSmallScreenChanges = m_userSettings.ignoreSmallScreenChanges;
+    engineConfig.frameChangeThreshold = m_userSettings.frameChangeThreshold;
     engineConfig.maxFps = m_userSettings.maximumFps;
     engineConfig.enabledLabels.clear();
     for (const QString &label : m_userSettings.enabledLabels) {
@@ -133,8 +135,10 @@ void MainWindow::updateCensorSettings(int style, int intensity, float scale) {
     m_userSettings.save();
 }
 
-void MainWindow::updateGeneralSettings(bool minimizeToTray) {
+void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold) {
     m_userSettings.minimizeToTray = minimizeToTray;
+    m_userSettings.ignoreSmallScreenChanges = ignoreSmallScreenChanges;
+    m_userSettings.frameChangeThreshold = frameChangeThreshold;
     applyUserSettings();
     m_userSettings.save();
 }

@@ -12,7 +12,12 @@
 #include <QTimer>
 #include <QString>
 #include <algorithm>
-#include <iostream>
+
+namespace {
+constexpr int kPixelDifferenceThreshold = 12;
+constexpr int kComparisonFrameWidth = 160;
+constexpr int kComparisonFrameHeight = 90;
+}
 
 GuardEngine::GuardEngine(const std::string &modelPath, QObject *parent)
 	: QObject(parent),
@@ -47,6 +52,12 @@ void GuardEngine::stop() {
 
 	m_active = false;
 	m_statsTimer->stop();
+	m_previousComparisonFrame.release();
+	m_currentGrayFrame.release();
+	m_currentComparisonFrame.release();
+	m_differenceFrame.release();
+	m_lastDetections.clear();
+	m_frameProcessingIdle = false;
 	
 	std::vector<DetectionResult> emptyDetections;
 	emit detectionsUpdated(emptyDetections);
@@ -63,8 +74,44 @@ const EngineConfig &GuardEngine::config() const {
 }
 
 void GuardEngine::setConfig(const EngineConfig &config) {
+	if (m_config.ignoreSmallScreenChanges != config.ignoreSmallScreenChanges) {
+		m_previousComparisonFrame.release();
+		m_frameProcessingIdle = false;
+	}
 	m_config = config;
 	m_statsTimer->setInterval(1000 / std::max(1, m_config.maxFps));
+}
+
+bool GuardEngine::shouldRunInference(const cv::Mat &bgrFrame) {
+	if (!m_config.ignoreSmallScreenChanges) {
+		m_frameProcessingIdle = false;
+		return true;
+	}
+
+	// Compare a small grayscale copy so minor cursor or caret changes do not trigger a full inference pass.
+	cv::cvtColor(bgrFrame, m_currentGrayFrame, cv::COLOR_BGR2GRAY);
+	cv::resize(m_currentGrayFrame, m_currentComparisonFrame, cv::Size(kComparisonFrameWidth, kComparisonFrameHeight));
+
+	if (!m_previousComparisonFrame.empty() && m_previousComparisonFrame.size() == m_currentComparisonFrame.size()) {
+		cv::absdiff(m_currentComparisonFrame, m_previousComparisonFrame, m_differenceFrame);
+		cv::threshold(
+			m_differenceFrame,
+			m_differenceFrame,
+			kPixelDifferenceThreshold,
+			255,
+			cv::THRESH_BINARY);
+
+		const double changedFraction =static_cast<double>(cv::countNonZero(m_differenceFrame)) / m_differenceFrame.total();
+		if (changedFraction <= std::clamp(m_config.frameChangeThreshold, 0.0f, 1.0f)) {
+			m_frameProcessingIdle = true;
+			m_currentComparisonFrame.copyTo(m_previousComparisonFrame);
+			return false;
+		}
+	}
+
+	m_frameProcessingIdle = false;
+	m_currentComparisonFrame.copyTo(m_previousComparisonFrame);
+	return true;
 }
 
 void GuardEngine::tick() {
@@ -84,6 +131,12 @@ void GuardEngine::tick() {
 
 	emit frameSizeChanged(bgrFrame.cols, bgrFrame.rows);
 	emit frameCaptured(bgrFrame);
+
+	if (!shouldRunInference(bgrFrame)) {
+		emit detectionsUpdated(m_lastDetections);
+		return;
+	}
+
 	std::vector<DetectionResult> detections = m_detector->detect(bgrFrame, m_config.confidenceThreshold);
 
 	// Only keep user enabled classes
@@ -94,6 +147,7 @@ void GuardEngine::tick() {
 			}),
 		detections.end());
 
+	m_lastDetections = detections;
 	emit detectionsUpdated(detections);
 
 	// Track FPS

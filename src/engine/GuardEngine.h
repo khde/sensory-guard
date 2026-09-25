@@ -30,11 +30,19 @@ public:
 	void setConfig(const EngineConfig &config);
 
 private:
+	bool shouldRunInference(const cv::Mat &bgrFrame);
+
 	bool m_active = false;
 	EngineConfig m_config;
 	QTimer *m_statsTimer;
 	std::unique_ptr<IScreenCapture> m_capture;
 	std::unique_ptr<OnnxDetector> m_detector;
+	cv::Mat m_previousComparisonFrame;
+	cv::Mat m_currentGrayFrame;
+	cv::Mat m_currentComparisonFrame;
+	cv::Mat m_differenceFrame;
+	std::vector<DetectionResult> m_lastDetections;
+	bool m_frameProcessingIdle = false;
 
 	// FPS tracking
 	int m_frameCount = 0;

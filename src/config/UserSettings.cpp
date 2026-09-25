@@ -34,6 +34,8 @@ UserSettings UserSettings::load() {
     settings.censorIntensity = storage.value("censorIntensity", fallback.censorIntensity).toInt();
     settings.censorScale = storage.value("censorScale", fallback.censorScale).toFloat();
     settings.minimizeToTray = storage.value("minimizeToTray", fallback.minimizeToTray).toBool();
+    settings.ignoreSmallScreenChanges = storage.value("ignoreSmallScreenChanges", fallback.ignoreSmallScreenChanges).toBool();
+    settings.frameChangeThreshold = storage.value("frameChangeThreshold", fallback.frameChangeThreshold).toFloat();
 
     return settings;
 }
@@ -47,5 +49,7 @@ void UserSettings::save() const {
     storage.setValue("censorIntensity", censorIntensity);
     storage.setValue("censorScale", censorScale);
     storage.setValue("minimizeToTray", minimizeToTray);
+    storage.setValue("ignoreSmallScreenChanges", ignoreSmallScreenChanges);
+    storage.setValue("frameChangeThreshold", frameChangeThreshold);
     storage.sync();
 }
