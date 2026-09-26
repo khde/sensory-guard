@@ -7,6 +7,7 @@
 #include <QTextEdit>
 #include <QScrollArea>
 #include <QFrame>
+#include <QPixmap>
 
 AboutWindow::AboutWindow(const QString &version, QWidget *parent): QDialog(parent) {
     setWindowTitle("About Sensor Guard");
@@ -22,9 +23,8 @@ void AboutWindow::setupUi() {
     QHBoxLayout *headerLayout = new QHBoxLayout();
     
     QLabel *logoLabel = new QLabel();
-    logoLabel->setText("🛡️");
-    logoLabel->setStyleSheet("font-size: 32px;");
-    logoLabel->setFixedSize(40, 40);
+    logoLabel->setPixmap(QPixmap(":/icons/logo.png").scaled(48, 48, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+    logoLabel->setFixedSize(48, 48);
     logoLabel->setAlignment(Qt::AlignCenter);
     headerLayout->addWidget(logoLabel);
 
@@ -84,7 +84,8 @@ void AboutWindow::setupUi() {
     const struct { const char* name; const char* desc; } components[] = {
         {"Qt", "Cross-platform GUI and application framework"},
         {"ONNX Runtime", "Cross-platform machine learning inference engine"},
-        {"OpenCV", "Open-source computer vision software library"}
+        {"OpenCV", "Open-source computer vision software library"},
+        {"Lucide", "Open-source icon library"}
     };
 
     for (size_t i = 0; i < sizeof(components) / sizeof(components[0]); ++i) {

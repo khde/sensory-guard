@@ -36,6 +36,10 @@ UserSettings UserSettings::load() {
     settings.minimizeToTray = storage.value("minimizeToTray", fallback.minimizeToTray).toBool();
     settings.ignoreSmallScreenChanges = storage.value("ignoreSmallScreenChanges", fallback.ignoreSmallScreenChanges).toBool();
     settings.frameChangeThreshold = storage.value("frameChangeThreshold", fallback.frameChangeThreshold).toFloat();
+    const int theme = storage.value("theme", static_cast<int>(fallback.theme)).toInt();
+    if (theme >= static_cast<int>(UserSettings::Theme::Dark) && theme <= static_cast<int>(UserSettings::Theme::System)) {
+        settings.theme = static_cast<UserSettings::Theme>(theme);
+    }
 
     return settings;
 }
@@ -51,5 +55,6 @@ void UserSettings::save() const {
     storage.setValue("minimizeToTray", minimizeToTray);
     storage.setValue("ignoreSmallScreenChanges", ignoreSmallScreenChanges);
     storage.setValue("frameChangeThreshold", frameChangeThreshold);
+    storage.setValue("theme", static_cast<int>(theme));
     storage.sync();
 }

@@ -9,6 +9,8 @@
 #include <QSlider>
 #include <QMap>
 #include <QSignalBlocker>
+#include <QScrollArea>
+#include <QFrame>
 
 // Mapping from display names to model label names
 static const QMap<QString, QString> LABEL_MAPPING = {
@@ -36,26 +38,42 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     QLabel *title = new QLabel("AI FILTERS", this);
+    title->setProperty("role", "pageTitle");
     layout->addWidget(title);
 
-    sensitivityLabel = new QLabel("Sensitivity: 20%", this);
-    sensitivitySlider = new QSlider(Qt::Horizontal, this);
+    QScrollArea *scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    QWidget *contentWidget = new QWidget(scrollArea);
+    QVBoxLayout *contentLayout = new QVBoxLayout(contentWidget);
+    contentLayout->setContentsMargins(0, 0, 8, 0);
+    scrollArea->setWidget(contentWidget);
+    layout->addWidget(scrollArea);
+
+    QGroupBox *detectionControls = new QGroupBox("Detection Controls", contentWidget);
+    QVBoxLayout *controlsLayout = new QVBoxLayout(detectionControls);
+
+    sensitivityLabel = new QLabel("Sensitivity: 20%", detectionControls);
+    sensitivitySlider = new QSlider(Qt::Horizontal, detectionControls);
     sensitivitySlider->setRange(1, 100);
     sensitivitySlider->setValue(20);
 
-    layout->addWidget(sensitivityLabel);
-    layout->addWidget(sensitivitySlider);
+    controlsLayout->addWidget(sensitivityLabel);
+    controlsLayout->addWidget(sensitivitySlider);
 
     connect( sensitivitySlider, &QSlider::valueChanged, this,&DetectionTab::updateSensitivityLabel);
     connect(sensitivitySlider, &QSlider::valueChanged, this, [this](int) { emitSettingsChanged();});
 
-    fpsLabel = new QLabel("Max FPS: 12", this);
-    fpsSlider = new QSlider(Qt::Horizontal, this);
+    fpsLabel = new QLabel("Max FPS: 12", detectionControls);
+    fpsSlider = new QSlider(Qt::Horizontal, detectionControls);
     fpsSlider->setRange(1, 60);
     fpsSlider->setValue(12);
 
-    layout->addWidget(fpsLabel);
-    layout->addWidget(fpsSlider);
+    controlsLayout->addWidget(fpsLabel);
+    controlsLayout->addWidget(fpsSlider);
+
+    contentLayout->addWidget(detectionControls);
 
     connect(fpsSlider, &QSlider::valueChanged, this, &DetectionTab::updateFpsLabel);
     connect(fpsSlider, &QSlider::valueChanged, this, [this](int) {emitSettingsChanged();});
@@ -72,11 +90,12 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
         "Exposed Feet"
     };
 
-    QGroupBox *exposedGroup = new QGroupBox("Exposed Categories", this);
+    QGroupBox *exposedGroup = new QGroupBox("Exposed Categories", contentWidget);
     QVBoxLayout *exposedLayout = new QVBoxLayout(exposedGroup);
-    for (QString &label : exposedLabels)
+    for (QString &label : exposedLabels){
         addLabelCheckbox(label, true, exposedLayout, exposedGroup);
-    layout->addWidget(exposedGroup);
+    }
+    contentLayout->addWidget(exposedGroup);
 
     QStringList coveredLabels = {
         "Covered Female Genitalia",
@@ -90,13 +109,14 @@ DetectionTab::DetectionTab(QWidget *parent): QWidget(parent) {
         "Male Face"
     };
 
-    QGroupBox *coveredGroup = new QGroupBox("Covered Categories", this);
+    QGroupBox *coveredGroup = new QGroupBox("Covered Categories", contentWidget);
     QVBoxLayout *coveredLayout = new QVBoxLayout(coveredGroup);
-    for (QString &label : coveredLabels)
+    for (QString &label : coveredLabels){
         addLabelCheckbox(label, false, coveredLayout, coveredGroup);
-    layout->addWidget(coveredGroup);
+    }
+    contentLayout->addWidget(coveredGroup);
 
-    layout->addStretch();
+    contentLayout->addStretch();
 }
 
 void DetectionTab::setSettings(const UserSettings &settings) {

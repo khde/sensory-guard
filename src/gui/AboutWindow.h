@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ABOUTWINDOW_H
+#define ABOUTWINDOW_H
 
 #include <QDialog>
 
@@ -11,3 +12,5 @@ public:
 private:
     void setupUi();
 };
+
+#endif

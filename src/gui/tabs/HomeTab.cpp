@@ -12,6 +12,7 @@ HomeTab::HomeTab(GuardEngine *engine, QWidget *parent): QWidget(parent), m_engin
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     QLabel *heading = new QLabel("GUARD OVERVIEW", this);
+    heading->setProperty("role", "pageTitle");
     layout->addWidget(heading);
 
     m_activateButton->setMinimumHeight(54);

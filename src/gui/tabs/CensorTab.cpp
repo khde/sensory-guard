@@ -12,6 +12,7 @@ CensorTab::CensorTab(QWidget *parent): QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
 
     QLabel *title = new QLabel("CENSOR STYLING", this);
+    title->setProperty("role", "pageTitle");
     layout->addWidget(title);
 
     QGroupBox *bboxScaleGroup = new QGroupBox("Censoring box scale", this);

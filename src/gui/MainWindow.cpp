@@ -9,6 +9,8 @@
 #include "engine/EngineConfig.h"
 #include "overlay/CensorOverlay.h"
 #include "overlay/CensoringConfig.h"
+#include "theme/ThemeManager.h"
+#include "widgets/ResponsiveTabWidget.h"
 
 #include <QLabel>
 #include <QStyle>
@@ -23,29 +25,54 @@
 #include <QScreen>
 #include <QPushButton>
 #include <QStringList>
+#include <QImage>
+#include <QIcon>
+#include <QPainter>
+#include <QPalette>
 
 #ifdef _WIN32
 #include <windows.h>
 #endif
 
-MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new QTabWidget(this)), m_statusLabel(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
+namespace {
+QIcon loadTabIcon(const QString &resourcePath, const QColor &color) {
+    QImage image(resourcePath);
+    if (image.isNull()) {
+        return QIcon();
+    }
+
+    image = image.convertToFormat(QImage::Format_ARGB32);
+    QPainter painter(&image);
+    painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+    painter.fillRect(image.rect(), color);
+    painter.end();
+    return QIcon(QPixmap::fromImage(image));
+}
+}
+
+MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new ResponsiveTabWidget(this)), m_statusLabel(new QLabel("Status:", this)), m_statusValue(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
     setWindowTitle("Sensor Guard");
-    setFixedSize(390, 580);
+    setMinimumSize(500, 640);
 
     m_userSettings = UserSettings::load();
 
     setCentralWidget(m_tabWidget);
+    m_statusLabel->setObjectName("statusLabel");
+    m_statusValue->setObjectName("statusValue");
     statusBar()->addWidget(m_statusLabel);
-    QPushButton *aboutButton = new QPushButton("Sensor Guard v0.1.0", this);
-    aboutButton->setFlat(true);
-    aboutButton->setCursor(Qt::PointingHandCursor);
-    statusBar()->addPermanentWidget(aboutButton);
-    connect(aboutButton, &QPushButton::clicked, this, &MainWindow::showAboutWindow);
+    statusBar()->addWidget(m_statusValue);
+    QPushButton *versionLabel = new QPushButton("Sensor Guard v0.1.0", this);
+    versionLabel->setObjectName("versionLabel");
+    versionLabel->setFlat(true);
+    versionLabel->setFocusPolicy(Qt::NoFocus);
+    versionLabel->setCursor(Qt::PointingHandCursor);
+    statusBar()->addPermanentWidget(versionLabel);
+    connect(versionLabel, &QPushButton::clicked, this, &MainWindow::showAboutWindow);
     connect(m_engine, &GuardEngine::activeChanged, this, [this](bool active) {
-        m_statusLabel->setText(active ? "Status: active" : "Status: disabled");
-        m_statusLabel->setProperty("active", active);
-        m_statusLabel->style()->unpolish(m_statusLabel);
-        m_statusLabel->style()->polish(m_statusLabel);
+        m_statusValue->setText(active ? "Active" : "Inactive");
+        m_statusValue->setProperty("active", active);
+        m_statusValue->style()->unpolish(m_statusValue);
+        m_statusValue->style()->polish(m_statusValue);
         if (m_toggleAction) {
             m_toggleAction->setText(active ? "Deactivate" : "Activate");
         }
@@ -70,6 +97,10 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
         m_overlay->setGeometry(screen->geometry());
 
     // Tabs
+    m_tabWidget->setIconSize(QSize(20, 20));
+    m_tabWidget->tabBar()->setUsesScrollButtons(false);
+    m_tabWidget->tabBar()->setExpanding(true);
+    m_tabWidget->tabBar()->setIconSize(QSize(20, 20));
     m_tabWidget->addTab(new HomeTab(m_engine, m_tabWidget), "Home");
     m_detectionTab = new DetectionTab(m_tabWidget);
     m_tabWidget->addTab(m_detectionTab, "Detection");
@@ -81,6 +112,11 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     connect(m_censorTab, &CensorTab::settingsChanged, this, &MainWindow::updateCensorSettings);
     m_settingsTab = new SettingsTab(m_tabWidget);
     m_tabWidget->addTab(m_settingsTab, "Settings");
+    m_tabWidget->setTabToolTip(0, "Guard overview");
+    m_tabWidget->setTabToolTip(1, "Detection settings");
+    m_tabWidget->setTabToolTip(2, "Censor settings");
+    m_tabWidget->setTabToolTip(3, "Application settings");
+    updateTabIcons(m_userSettings.theme);
     m_settingsTab->setSettings(m_userSettings);
     connect(m_settingsTab, &SettingsTab::settingsChanged, this, &MainWindow::updateGeneralSettings);
 
@@ -88,9 +124,25 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
 
     m_tabWidget->setCurrentIndex(0);
 
-    m_statusLabel->setText(m_engine->isActive() ? "Status: active" : "Status: disabled");
+    const bool active = m_engine->isActive();
+    m_statusValue->setText(active ? "Active" : "Inactive");
+    m_statusValue->setProperty("active", active);
+    m_statusValue->style()->unpolish(m_statusValue);
+    m_statusValue->style()->polish(m_statusValue);
 
     setupTrayIcon();
+}
+
+void MainWindow::updateTabIcons(UserSettings::Theme theme) {
+    const bool dark = theme == UserSettings::Theme::Dark ||
+        (theme == UserSettings::Theme::System &&
+         QGuiApplication::palette().color(QPalette::Window).lightness() < 128);
+    const QColor iconColor = dark ? QColor("#e6edf5") : QColor("#344152");
+
+    m_tabWidget->setTabIcon(0, loadTabIcon(":/icons/house.png", iconColor));
+    m_tabWidget->setTabIcon(1, loadTabIcon(":/icons/search-x.png", iconColor));
+    m_tabWidget->setTabIcon(2, loadTabIcon(":/icons/eye-off.png", iconColor));
+    m_tabWidget->setTabIcon(3, loadTabIcon(":/icons/settings.png", iconColor));
 }
 
 MainWindow::~MainWindow() {
@@ -135,11 +187,14 @@ void MainWindow::updateCensorSettings(int style, int intensity, float scale) {
     m_userSettings.save();
 }
 
-void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold) {
+void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme) {
     m_userSettings.minimizeToTray = minimizeToTray;
     m_userSettings.ignoreSmallScreenChanges = ignoreSmallScreenChanges;
     m_userSettings.frameChangeThreshold = frameChangeThreshold;
+    m_userSettings.theme = theme;
     applyUserSettings();
+    ThemeManager::apply(theme);
+    updateTabIcons(theme);
     m_userSettings.save();
 }
 

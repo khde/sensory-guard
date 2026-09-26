@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
 
 #include "config/UserSettings.h"
 
@@ -27,9 +28,10 @@ private:
     void bringToForeground();
     void showAboutWindow();
     void applyUserSettings();
+    void updateTabIcons(UserSettings::Theme theme);
     void updateDetectionSettings(float sensitivity, const QStringList &enabledLabels, int maximumFps);
     void updateCensorSettings(int style, int intensity, float scale);
-    void updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold);
+    void updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme);
 
     GuardEngine *m_engine;
     UserSettings m_userSettings;
@@ -39,6 +41,7 @@ private:
     CensorTab *m_censorTab;
     SettingsTab *m_settingsTab;
     QLabel *m_statusLabel;
+    QLabel *m_statusValue;
     bool m_minimizeToTray = false;
     QSystemTrayIcon *m_trayIcon;
     QAction *m_toggleAction = nullptr;
@@ -47,3 +50,5 @@ private:
 protected:
     void closeEvent(QCloseEvent *event) override;
 };
+
+#endif

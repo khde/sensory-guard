@@ -7,6 +7,8 @@
 #include <QCheckBox>
 #include <QSlider>
 
+class QComboBox;
+
 class SettingsTab : public QWidget {
     Q_OBJECT
 
@@ -20,11 +22,12 @@ private:
 
     QCheckBox *m_minimizeToTrayCheckBox;
     QCheckBox *m_ignoreSmallScreenChangesCheckBox;
+    QComboBox *m_themeComboBox;
     QLabel *m_frameChangeLabel;
     QSlider *m_frameChangeSlider;
 
 signals:
-    void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold);
+    void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme);
 };
 
 #endif

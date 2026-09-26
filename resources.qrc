@@ -1,0 +1,13 @@
+<RCC>
+    <qresource prefix="/theme">
+        <file alias="dark.qss">src/gui/theme/dark.qss</file>
+        <file alias="light.qss">src/gui/theme/light.qss</file>
+    </qresource>
+    <qresource prefix="/icons">
+        <file alias="house.png">assets/icons/house.png</file>
+        <file alias="search-x.png">assets/icons/search-x.png</file>
+        <file alias="eye-off.png">assets/icons/eye-off.png</file>
+        <file alias="settings.png">assets/icons/settings.png</file>
+        <file alias="logo.png">assets/icons/logo.png</file>
+    </qresource>
+</RCC>

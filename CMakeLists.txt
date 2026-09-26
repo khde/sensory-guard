@@ -71,6 +71,11 @@ add_executable(SensorGuard
     src/gui/overlay/CensorOverlay.cpp
     src/gui/overlay/CensorStyle.h
     src/gui/overlay/CensorStyle.cpp
+    src/gui/widgets/ResponsiveTabWidget.h
+    src/gui/widgets/ResponsiveTabWidget.cpp
+    src/gui/theme/ThemeManager.h
+    src/gui/theme/ThemeManager.cpp
+    resources.qrc
     src/engine/GuardEngine.h
     src/engine/EngineConfig.h
     src/engine/GuardEngine.cpp
