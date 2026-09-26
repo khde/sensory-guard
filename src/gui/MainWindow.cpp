@@ -52,7 +52,7 @@ QIcon loadTabIcon(const QString &resourcePath, const QColor &color) {
 
 MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new ResponsiveTabWidget(this)), m_statusLabel(new QLabel("Status:", this)), m_statusValue(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
     setWindowTitle("Sensor Guard");
-    setMinimumSize(500, 640);
+    setMinimumSize(390, 580);
 
     m_userSettings = UserSettings::load();
 
