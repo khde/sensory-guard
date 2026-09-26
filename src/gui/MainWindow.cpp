@@ -200,7 +200,7 @@ void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScre
 
 void MainWindow::setupTrayIcon() {
     m_trayIcon = new QSystemTrayIcon(this);
-    m_trayIcon->setIcon(style()->standardIcon(QStyle::SP_ComputerIcon));
+    m_trayIcon->setIcon(QIcon(":/icons/logo.png"));
     m_trayIcon->setToolTip("Sensor Guard");
 
     QMenu *trayMenu = new QMenu(this);

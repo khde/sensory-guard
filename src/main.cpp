@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDir>
+#include <QIcon>
 
 #include "engine/GuardEngine.h"
 #include "gui/MainWindow.h"
@@ -8,6 +9,7 @@
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
+    QApplication::setWindowIcon(QIcon(":/icons/logo.png"));
     QCoreApplication::setOrganizationName("SensorGuard");
     QCoreApplication::setApplicationName("SensorGuard");
 
