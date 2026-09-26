@@ -28,6 +28,7 @@ private:
 
 signals:
     void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme);
+    void resetRequested();
 };
 
 #endif

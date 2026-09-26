@@ -119,6 +119,7 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     updateTabIcons(m_userSettings.theme);
     m_settingsTab->setSettings(m_userSettings);
     connect(m_settingsTab, &SettingsTab::settingsChanged, this, &MainWindow::updateGeneralSettings);
+    connect(m_settingsTab, &SettingsTab::resetRequested, this, &MainWindow::resetSettings);
 
     applyUserSettings();
 
@@ -195,6 +196,17 @@ void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScre
     applyUserSettings();
     ThemeManager::apply(theme);
     updateTabIcons(theme);
+    m_userSettings.save();
+}
+
+void MainWindow::resetSettings() {
+    m_userSettings = UserSettings::defaults();
+    m_detectionTab->setSettings(m_userSettings);
+    m_censorTab->setSettings(m_userSettings);
+    m_settingsTab->setSettings(m_userSettings);
+    applyUserSettings();
+    ThemeManager::apply(m_userSettings.theme);
+    updateTabIcons(m_userSettings.theme);
     m_userSettings.save();
 }
 

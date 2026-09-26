@@ -7,6 +7,8 @@
 #include <QComboBox>
 #include <QSlider>
 #include <QSignalBlocker>
+#include <QMessageBox>
+#include <QPushButton>
 #include <QtGlobal>
 
 SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
@@ -56,6 +58,20 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     performanceLayout->addWidget(m_frameChangeSlider);
 
     layout->addWidget(performanceSettings);
+
+    QPushButton *resetButton = new QPushButton("Reset settings to default", this);
+    layout->addWidget(resetButton);
+    connect(resetButton, &QPushButton::clicked, this, [this] {
+        const QMessageBox::StandardButton choice = QMessageBox::question(
+            this,
+            "Reset Settings",
+            "Reset all settings to their defaults?",
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (choice == QMessageBox::Yes) {
+            emit resetRequested();
+        }
+    });
 
     connect(m_minimizeToTrayCheckBox, &QCheckBox::toggled, this, [this](bool) {
         emit settingsChanged(
