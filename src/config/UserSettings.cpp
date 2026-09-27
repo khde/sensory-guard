@@ -52,6 +52,7 @@ UserSettings UserSettings::load() {
     if (settings.hardware.cpuThreadCount < 1){
         settings.hardware.cpuThreadCount = fallback.hardware.cpuThreadCount;
     }
+    settings.display.displayId = storage.value("display/displayId", QString::fromStdString(fallback.display.displayId)).toString().toStdString();
     const int theme = storage.value("theme", static_cast<int>(fallback.theme)).toInt();
     if (theme >= static_cast<int>(UserSettings::Theme::Dark) && theme <= static_cast<int>(UserSettings::Theme::System)) {
         settings.theme = static_cast<UserSettings::Theme>(theme);
@@ -75,6 +76,7 @@ void UserSettings::save() const {
     storage.setValue("hardware/deviceIndex", hardware.deviceIndex);
     storage.setValue("hardware/deviceId", QString::fromStdString(hardware.deviceId));
     storage.setValue("hardware/cpuThreadCount", hardware.cpuThreadCount);
+    storage.setValue("display/displayId", QString::fromStdString(display.displayId));
     storage.setValue("theme", static_cast<int>(theme));
     storage.sync();
 }

@@ -16,6 +16,10 @@ struct HardwareConfig {
     int cpuThreadCount = 4;
 };
 
+struct DisplayConfig {
+    std::string displayId;
+};
+
 struct EngineConfig {
     float confidenceThreshold = 0.20f;
     bool ignoreSmallScreenChanges = true;
@@ -23,6 +27,7 @@ struct EngineConfig {
     std::unordered_set<std::string> enabledLabels;
     int maxFps = 12;
     HardwareConfig hardware;
+    DisplayConfig display;
 };
 
 #endif

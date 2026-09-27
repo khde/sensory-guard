@@ -1,6 +1,7 @@
 #include "GuardEngine.h"
 
 #include "inference/OnnxDetector.h"
+#include "platform/DisplayDevices.h"
 
 #ifdef _WIN32
 	#include "platform/WindowsCapture.h"
@@ -42,7 +43,15 @@ EngineStartResult GuardEngine::start() {
 
 	std::unique_ptr<IScreenCapture> capture;
 #ifdef _WIN32
-	capture = std::make_unique<WindowsScreenCapture>();
+	DisplayDescriptor display;
+	if (!resolveDisplay(m_config.display.displayId, display)) {
+		return fail(
+			EngineErrorCode::DisplayUnavailable,
+			m_config.display.displayId.empty()
+				? "No compatible monitor was found."
+				: "The selected monitor is no longer available.");
+	}
+	capture = std::make_unique<WindowsScreenCapture>(display);
 #elif defined(SENSORGUARD_HAS_X11)
 	capture = std::make_unique<LinuxScreenCapture>();
 #endif
@@ -78,6 +87,9 @@ EngineStartResult GuardEngine::start() {
 
 	m_capture = std::move(capture);
 	m_detector = std::move(detector);
+#ifdef _WIN32
+	m_display = display;
+#endif
 
 	m_active = true;
 	m_statsTimer->start();
@@ -112,6 +124,10 @@ bool GuardEngine::isActive() const {
 
 const EngineConfig &GuardEngine::config() const {
 	return m_config;
+}
+
+const DisplayDescriptor &GuardEngine::display() const {
+	return m_display;
 }
 
 void GuardEngine::setConfig(const EngineConfig &config) {

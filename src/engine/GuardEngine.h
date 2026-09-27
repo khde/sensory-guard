@@ -3,6 +3,7 @@
 
 #include "inference/Detection.h"
 #include "engine/EngineConfig.h"
+#include "platform/DisplayDevices.h"
 
 #include <QObject>
 #include <memory>
@@ -21,7 +22,8 @@ enum class EngineErrorCode {
 	BackendUnavailable,
 	DeviceUnavailable,
 	ModelLoadFailed,
-	CaptureUnavailable
+	CaptureUnavailable,
+	DisplayUnavailable
 };
 
 struct EngineStartResult {
@@ -42,6 +44,7 @@ public:
 	bool isActive() const;
 
 	const EngineConfig &config() const;
+	const DisplayDescriptor &display() const;
 	void setConfig(const EngineConfig &config);
 
 private:
@@ -50,6 +53,7 @@ private:
 	bool m_active = false;
 	std::string m_modelPath;
 	EngineConfig m_config;
+	DisplayDescriptor m_display;
 	QTimer *m_statsTimer;
 	std::unique_ptr<IScreenCapture> m_capture;
 	std::unique_ptr<OnnxDetector> m_detector;

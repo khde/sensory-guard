@@ -23,6 +23,7 @@ struct UserSettings {
     float censorScale = 1.0f;
     Theme theme = Theme::System;
     HardwareConfig hardware;
+    DisplayConfig display;
 
     static UserSettings defaults();
     static UserSettings load();

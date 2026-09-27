@@ -92,17 +92,19 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     connect(m_engine, &GuardEngine::detectionsUpdated, m_overlay, &CensorOverlay::setDetections);
     connect(m_engine, &GuardEngine::activeChanged, m_overlay, [this](bool active) {
         if (active) {
+#ifdef _WIN32
+            const DisplayDescriptor &display = m_engine->display();
+            m_overlay->setGeometry(display.desktopX, display.desktopY, display.desktopWidth, display.desktopHeight);
+#else
             if (QScreen *screen = QGuiApplication::primaryScreen())
                 m_overlay->setGeometry(screen->geometry());
+#endif
             m_overlay->show();
             m_overlay->raise();
         } else {
             m_overlay->hide();
         }
     });
-
-    if (QScreen *screen = QGuiApplication::primaryScreen())
-        m_overlay->setGeometry(screen->geometry());
 
     // Tabs
     m_tabWidget->setIconSize(QSize(20, 20));
@@ -164,7 +166,8 @@ void MainWindow::applyUserSettings() {
         engineConfig.hardware.deviceIndex != m_userSettings.hardware.deviceIndex ||
         engineConfig.hardware.deviceId != m_userSettings.hardware.deviceId ||
         engineConfig.hardware.cpuThreadCount != m_userSettings.hardware.cpuThreadCount;
-    const bool restartRequired = hardwareChanged && m_engine->isActive();
+    const bool displayChanged = engineConfig.display.displayId != m_userSettings.display.displayId;
+    const bool restartRequired = (hardwareChanged || displayChanged) && m_engine->isActive();
     if (restartRequired)
         m_engine->stop();
 
@@ -172,6 +175,7 @@ void MainWindow::applyUserSettings() {
     engineConfig.frameChangeThreshold = m_userSettings.frameChangeThreshold;
     engineConfig.maxFps = m_userSettings.maximumFps;
     engineConfig.hardware = m_userSettings.hardware;
+    engineConfig.display = m_userSettings.display;
     engineConfig.enabledLabels.clear();
     for (const QString &label : m_userSettings.enabledLabels) {
         engineConfig.enabledLabels.insert(label.toStdString());
@@ -212,7 +216,7 @@ void MainWindow::updateCensorSettings(int style, int intensity, float scale) {
     m_userSettings.save();
 }
 
-void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount) {
+void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId) {
     m_userSettings.minimizeToTray = minimizeToTray;
     m_userSettings.ignoreSmallScreenChanges = ignoreSmallScreenChanges;
     m_userSettings.frameChangeThreshold = frameChangeThreshold;
@@ -221,6 +225,7 @@ void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScre
     m_userSettings.hardware.deviceIndex = deviceIndex;
     m_userSettings.hardware.deviceId = deviceId.toStdString();
     m_userSettings.hardware.cpuThreadCount = cpuThreadCount;
+    m_userSettings.display.displayId = displayId.toStdString();
     applyUserSettings();
     ThemeManager::apply(theme);
     updateTabIcons(theme);

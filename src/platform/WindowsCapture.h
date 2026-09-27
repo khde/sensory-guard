@@ -4,6 +4,7 @@
 #ifdef _WIN32
 
 #include "platform/IScreenCapture.h"
+#include "platform/DisplayDevices.h"
 
 #include <d3d11.h>
 #include <dxgi1_2.h>
@@ -11,18 +12,18 @@
 
 class WindowsScreenCapture final : public IScreenCapture {
 public:
-    explicit WindowsScreenCapture(unsigned int outputIndex = 0);
+    explicit WindowsScreenCapture(const DisplayDescriptor &display);
     ~WindowsScreenCapture() override = default;
 
     bool isAvailable() const override;
     bool captureFrame(cv::Mat &frame) override;
 
 private:
-    bool initialize(unsigned int outputIndex);
+    bool initialize();
     bool createStagingTexture(const D3D11_TEXTURE2D_DESC &sourceDescription);
     void releaseDuplication();
 
-    unsigned int m_outputIndex = 0;
+    DisplayDescriptor m_display;
     Microsoft::WRL::ComPtr<ID3D11Device> m_device;
     Microsoft::WRL::ComPtr<ID3D11DeviceContext> m_context;
     Microsoft::WRL::ComPtr<IDXGIOutputDuplication> m_duplication;

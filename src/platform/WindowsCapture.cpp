@@ -3,28 +3,55 @@
 #ifdef _WIN32
 
 #include <cstring>
+#include <string>
 
 using Microsoft::WRL::ComPtr;
 
-WindowsScreenCapture::WindowsScreenCapture(unsigned int outputIndex) {
-    initialize(outputIndex);
+namespace {
+
+std::string narrow(const wchar_t *value) {
+    const int size = WideCharToMultiByte(CP_UTF8, 0, value, -1, nullptr, 0, nullptr, nullptr);
+    if (size <= 1) {
+        return {};
+    }
+
+    std::string result(static_cast<size_t>(size), '\0');
+    WideCharToMultiByte(CP_UTF8, 0, value, -1, result.data(), size, nullptr, nullptr);
+    result.resize(static_cast<size_t>(size - 1));
+    return result;
 }
 
-bool WindowsScreenCapture::initialize(unsigned int outputIndex) {
-    m_outputIndex = outputIndex;
+}
+
+WindowsScreenCapture::WindowsScreenCapture(const DisplayDescriptor &display): m_display(display) {
+    initialize();
+}
+
+bool WindowsScreenCapture::initialize() {
     releaseDuplication();
 
     ComPtr<IDXGIFactory1> factory;
-    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory))))
+    if (FAILED(CreateDXGIFactory1(IID_PPV_ARGS(&factory)))) {
         return false;
+    }
 
     ComPtr<IDXGIAdapter1> adapter;
-    if (factory->EnumAdapters1(0, &adapter) == DXGI_ERROR_NOT_FOUND)
+    if (factory->EnumAdapters1(static_cast<UINT>(m_display.adapterIndex), &adapter) == DXGI_ERROR_NOT_FOUND) {
         return false;
+    }
 
     ComPtr<IDXGIOutput> output;
-    if (adapter->EnumOutputs(outputIndex, &output) != S_OK)
+    if (adapter->EnumOutputs(static_cast<UINT>(m_display.outputIndex), &output) != S_OK) {
         return false;
+    }
+
+    DXGI_OUTPUT_DESC outputDescription{};
+    if (FAILED(output->GetDesc(&outputDescription))) {
+        return false;
+    }
+    if (m_display.deviceName != narrow(outputDescription.DeviceName)) {
+        return false;
+    }
 
     D3D_FEATURE_LEVEL featureLevels[] = {
         D3D_FEATURE_LEVEL_11_0,
@@ -46,8 +73,9 @@ bool WindowsScreenCapture::initialize(unsigned int outputIndex) {
     }
 
     ComPtr<IDXGIOutput1> output1;
-    if (FAILED(output.As(&output1)))
+    if (FAILED(output.As(&output1))) {
         return false;
+    }
 
     return SUCCEEDED(output1->DuplicateOutput(m_device.Get(), &m_duplication));
 }
@@ -71,15 +99,15 @@ bool WindowsScreenCapture::createStagingTexture(
     stagingDescription.MiscFlags = 0;
     stagingDescription.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
 
-    return SUCCEEDED(m_device->CreateTexture2D(
-        &stagingDescription, nullptr, &m_stagingTexture));
+    return SUCCEEDED(m_device->CreateTexture2D(&stagingDescription, nullptr, &m_stagingTexture));
 }
 
 bool WindowsScreenCapture::captureFrame(cv::Mat &frame) {
     if (!isAvailable()) {
         // Attempt to reinitialize if duplication was lost, eg. screen lock or full screen
-        if (!initialize(m_outputIndex))
+        if (!initialize()) {
             return false;
+        }
     }
 
     DXGI_OUTDUPL_FRAME_INFO frameInfo{};

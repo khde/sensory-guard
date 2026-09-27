@@ -1,6 +1,7 @@
 #include "SettingsTab.h"
 
 #include "inference/HardwareDevices.h"
+#include "platform/DisplayDevices.h"
 
 #include <QLabel>
 #include <QVBoxLayout>
@@ -48,6 +49,20 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
 
     QGroupBox *hardwareSettings = new QGroupBox("Hardware", contentWidget);
     QVBoxLayout *hardwareLayout = new QVBoxLayout(hardwareSettings);
+
+    hardwareLayout->addWidget(new QLabel("Monitor", hardwareSettings));
+    m_displayComboBox = new QComboBox(hardwareSettings);
+    const std::vector<DisplayDescriptor> displays = enumerateDisplays();
+    for (const DisplayDescriptor &display : displays) {
+        m_displayComboBox->addItem(
+            QString::fromStdString(display.name) + " - " + QString::number(display.desktopWidth) + "x" + QString::number(display.desktopHeight),
+            QString::fromStdString(display.id));
+    }
+    if (displays.empty()) {
+        m_displayComboBox->addItem("No compatible monitor detected");
+        m_displayComboBox->setEnabled(false);
+    }
+    hardwareLayout->addWidget(m_displayComboBox);
 
     hardwareLayout->addWidget(new QLabel("Inference backend", hardwareSettings));
     m_backendComboBox = new QComboBox(hardwareSettings);
@@ -131,6 +146,7 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     connect(m_backendComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {updateFrameChangeControls(); emitCurrentSettings();});
     connect(m_gpuComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {emitCurrentSettings();});
     connect(m_cpuThreadSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {emitCurrentSettings();});
+    connect(m_displayComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {emitCurrentSettings();});
 
     updateFrameChangeLabel(m_frameChangeSlider->value());
     updateFrameChangeControls();
@@ -146,6 +162,7 @@ void SettingsTab::setSettings(const UserSettings &settings) {
     const QSignalBlocker backendBlocker(m_backendComboBox);
     const QSignalBlocker gpuBlocker(m_gpuComboBox);
     const QSignalBlocker threadBlocker(m_cpuThreadSpinBox);
+    const QSignalBlocker displayBlocker(m_displayComboBox);
     m_minimizeToTrayCheckBox->setChecked(settings.minimizeToTray);
     m_ignoreSmallScreenChangesCheckBox->setChecked(settings.ignoreSmallScreenChanges);
     m_frameChangeSlider->setValue(qBound(0, qRound(settings.frameChangeThreshold / 0.001f), 100));
@@ -168,6 +185,26 @@ void SettingsTab::setSettings(const UserSettings &settings) {
     }
     m_gpuComboBox->setCurrentIndex(gpuIndex >= 0 ? gpuIndex : 0);
     m_cpuThreadSpinBox->setValue(qBound(1, settings.hardware.cpuThreadCount, 64));
+    int displayIndex = m_displayComboBox->findData(QString::fromStdString(settings.display.displayId));
+    if (displayIndex < 0 && !settings.display.displayId.empty()) {
+        m_displayComboBox->addItem(
+            "Unavailable monitor - " + QString::fromStdString(settings.display.displayId), QString::fromStdString(settings.display.displayId));
+        displayIndex = m_displayComboBox->count() - 1;
+    }
+    if (displayIndex < 0 && settings.display.displayId.empty() && m_displayComboBox->count() > 0) {
+        const std::vector<DisplayDescriptor> displays = enumerateDisplays();
+        for (int index = 0; index < static_cast<int>(displays.size()); ++index) {
+            if (displays[static_cast<size_t>(index)].desktopX == 0 &&
+                displays[static_cast<size_t>(index)].desktopY == 0) {
+                displayIndex = index;
+                break;
+            }
+        }
+        if (displayIndex < 0)
+            displayIndex = 0;
+    }
+    if (displayIndex >= 0)
+        m_displayComboBox->setCurrentIndex(displayIndex);
     updateFrameChangeLabel(m_frameChangeSlider->value());
     updateFrameChangeControls();
 }
@@ -199,5 +236,6 @@ void SettingsTab::emitCurrentSettings() {
         static_cast<InferenceBackend>(m_backendComboBox->currentData().toInt()),
         m_gpuComboBox->currentData().toInt(),
         m_gpuComboBox->currentData(Qt::UserRole + 1).toString(),
-        m_cpuThreadSpinBox->value());
+        m_cpuThreadSpinBox->value(),
+        m_displayComboBox->currentData().toString());
 }

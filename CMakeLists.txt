@@ -54,7 +54,6 @@ endif()
 
 add_executable(SensorGuard
     src/main.cpp
-
     src/gui/MainWindow.h
     src/gui/MainWindow.cpp
     src/gui/AboutWindow.h
@@ -88,6 +87,8 @@ add_executable(SensorGuard
     src/config/UserSettings.h
     src/config/UserSettings.cpp
     src/platform/IScreenCapture.h
+    src/platform/DisplayDevices.h
+    src/platform/DisplayDevices.cpp
 )
 
 target_include_directories(SensorGuard PRIVATE

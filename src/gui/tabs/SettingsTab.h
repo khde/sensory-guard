@@ -32,9 +32,10 @@ private:
     QComboBox *m_gpuComboBox;
     QLabel *m_cpuThreadLabel;
     QSpinBox *m_cpuThreadSpinBox;
+    QComboBox *m_displayComboBox;
 
 signals:
-    void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount);
+    void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId);
     void resetRequested();
 };
 
