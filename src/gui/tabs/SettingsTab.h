@@ -8,6 +8,7 @@
 #include <QSlider>
 
 class QComboBox;
+class QLabel;
 class QSpinBox;
 
 class SettingsTab : public QWidget {
