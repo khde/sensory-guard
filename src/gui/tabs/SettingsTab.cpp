@@ -38,7 +38,7 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     QVBoxLayout *generalLayout = new QVBoxLayout(generalSettings);
 
     m_minimizeToTrayCheckBox = new QCheckBox("Minimize to tray on close", generalSettings);
-    m_minimizeToTrayCheckBox->setChecked(true);
+    m_minimizeToTrayCheckBox->setChecked(false);
     generalLayout->addWidget(m_minimizeToTrayCheckBox);
 
     // Not implemented

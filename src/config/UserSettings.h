@@ -12,7 +12,7 @@ struct UserSettings {
         Dark = 2
     };
 
-    bool minimizeToTray = true;
+    bool minimizeToTray = false;
     float sensitivity = 0.20f;
     QStringList enabledLabels;
     int maximumFps = 12;
