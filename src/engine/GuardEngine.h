@@ -15,6 +15,21 @@ class QTimer;
 class OnnxDetector;
 class IScreenCapture;
 
+enum class EngineErrorCode {
+	None,
+	InvalidConfiguration,
+	BackendUnavailable,
+	DeviceUnavailable,
+	ModelLoadFailed,
+	CaptureUnavailable
+};
+
+struct EngineStartResult {
+	bool success = false;
+	EngineErrorCode errorCode = EngineErrorCode::None;
+	std::string message;
+};
+
 class GuardEngine : public QObject {
 	Q_OBJECT
 
@@ -22,7 +37,7 @@ public:
 	explicit GuardEngine(const std::string &modelPath, QObject *parent = nullptr);
 	~GuardEngine() override;
 
-	void start();
+	EngineStartResult start();
 	void stop();
 	bool isActive() const;
 
@@ -33,6 +48,7 @@ private:
 	bool shouldRunInference(const cv::Mat &bgrFrame);
 
 	bool m_active = false;
+	std::string m_modelPath;
 	EngineConfig m_config;
 	QTimer *m_statsTimer;
 	std::unique_ptr<IScreenCapture> m_capture;

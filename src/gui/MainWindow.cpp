@@ -29,6 +29,7 @@
 #include <QIcon>
 #include <QPainter>
 #include <QPalette>
+#include <QMessageBox>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -76,6 +77,13 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
         if (m_toggleAction) {
             m_toggleAction->setText(active ? "Deactivate" : "Activate");
         }
+    });
+    connect(m_engine, &GuardEngine::failed, this, [this](const QString &message) {
+        m_statusValue->setText("Error");
+        m_statusValue->setProperty("active", false);
+        m_statusValue->style()->unpolish(m_statusValue);
+        m_statusValue->style()->polish(m_statusValue);
+        QMessageBox::critical(this, "Sensor Guard could not start", message);
     });
     connect(m_engine, &GuardEngine::frameSizeChanged, this, [this](int width, int height) {
         m_overlay->setSourceSize(QSize(width, height));
@@ -152,10 +160,18 @@ MainWindow::~MainWindow() {
 
 void MainWindow::applyUserSettings() {
     EngineConfig engineConfig = m_engine->config();
+    const bool hardwareChanged = engineConfig.hardware.backend != m_userSettings.hardware.backend ||
+        engineConfig.hardware.deviceIndex != m_userSettings.hardware.deviceIndex ||
+        engineConfig.hardware.deviceId != m_userSettings.hardware.deviceId ||
+        engineConfig.hardware.cpuThreadCount != m_userSettings.hardware.cpuThreadCount;
+    const bool restartRequired = hardwareChanged && m_engine->isActive();
+    if (restartRequired)
+        m_engine->stop();
+
     engineConfig.confidenceThreshold = m_userSettings.sensitivity;
-    engineConfig.ignoreSmallScreenChanges = m_userSettings.ignoreSmallScreenChanges;
     engineConfig.frameChangeThreshold = m_userSettings.frameChangeThreshold;
     engineConfig.maxFps = m_userSettings.maximumFps;
+    engineConfig.hardware = m_userSettings.hardware;
     engineConfig.enabledLabels.clear();
     for (const QString &label : m_userSettings.enabledLabels) {
         engineConfig.enabledLabels.insert(label.toStdString());
@@ -170,6 +186,14 @@ void MainWindow::applyUserSettings() {
     m_overlay->setCensoringConfig(censoringConfig);
 
     m_minimizeToTray = m_userSettings.minimizeToTray;
+
+    if (restartRequired) {
+        const EngineStartResult result = m_engine->start();
+        if (!result.success) {
+            return;
+        }
+    }
+        
 }
 
 void MainWindow::updateDetectionSettings(float sensitivity, const QStringList &enabledLabels, int maximumFps) {
@@ -188,11 +212,15 @@ void MainWindow::updateCensorSettings(int style, int intensity, float scale) {
     m_userSettings.save();
 }
 
-void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme) {
+void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount) {
     m_userSettings.minimizeToTray = minimizeToTray;
     m_userSettings.ignoreSmallScreenChanges = ignoreSmallScreenChanges;
     m_userSettings.frameChangeThreshold = frameChangeThreshold;
     m_userSettings.theme = theme;
+    m_userSettings.hardware.backend = backend;
+    m_userSettings.hardware.deviceIndex = deviceIndex;
+    m_userSettings.hardware.deviceId = deviceId.toStdString();
+    m_userSettings.hardware.cpuThreadCount = cpuThreadCount;
     applyUserSettings();
     ThemeManager::apply(theme);
     updateTabIcons(theme);

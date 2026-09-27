@@ -59,6 +59,10 @@ void WindowsScreenCapture::releaseDuplication() {
     m_device.Reset();
 }
 
+bool WindowsScreenCapture::isAvailable() const {
+    return m_duplication && m_context;
+}
+
 bool WindowsScreenCapture::createStagingTexture(
     const D3D11_TEXTURE2D_DESC &sourceDescription) {
     D3D11_TEXTURE2D_DESC stagingDescription = sourceDescription;
@@ -72,7 +76,7 @@ bool WindowsScreenCapture::createStagingTexture(
 }
 
 bool WindowsScreenCapture::captureFrame(cv::Mat &frame) {
-    if (!m_duplication || !m_context) {
+    if (!isAvailable()) {
         // Attempt to reinitialize if duplication was lost, eg. screen lock or full screen
         if (!initialize(m_outputIndex))
             return false;

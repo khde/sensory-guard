@@ -13,6 +13,7 @@ public:
     LinuxScreenCapture();
     ~LinuxScreenCapture() override;
 
+    bool isAvailable() const override;
     bool captureFrame(cv::Mat &frame) override;
 
 private:

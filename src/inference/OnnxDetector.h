@@ -2,6 +2,7 @@
 #define ONNX_DETECTOR_H
 
 #include "inference/Detection.h"
+#include "engine/EngineConfig.h"
 
 #include <string>
 #include <vector>
@@ -11,10 +12,18 @@
 
 class OnnxDetector {
 public:
-    OnnxDetector(const std::string& modelPath);
+    enum class InitializationError {
+        None,
+        InvalidConfiguration,
+        BackendUnavailable,
+        DeviceUnavailable,
+        ModelLoadFailed
+    };
+
+    OnnxDetector(const std::string& modelPath, const HardwareConfig &hardwareConfig, InitializationError &errorCode, std::string &errorMessage);
     ~OnnxDetector();
 
-    bool loadModel(const std::string& modelPath);
+    bool isReady() const;
 
     std::vector<float> inference(const std::vector<float>& inputTensor);
 
@@ -24,6 +33,7 @@ private:
     Ort::Env m_env;
     Ort::SessionOptions m_sessionOptions;
     std::unique_ptr<Ort::Session> m_session;
+    bool m_ready = false;
 
     // Input/Output names
     const char* m_inputName = "images";

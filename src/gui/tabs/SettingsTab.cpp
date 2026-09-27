@@ -1,5 +1,7 @@
 #include "SettingsTab.h"
 
+#include "inference/HardwareDevices.h"
+
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QGroupBox>
@@ -10,6 +12,9 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QtGlobal>
+#include <QSpinBox>
+#include <QScrollArea>
+#include <QFrame>
 
 SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -18,7 +23,17 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     title->setProperty("role", "pageTitle");
     layout->addWidget(title);
 
-    QGroupBox *generalSettings = new QGroupBox("General Settings", this);
+    QScrollArea *scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    scrollArea->setFrameShape(QFrame::NoFrame);
+    QWidget *contentWidget = new QWidget(scrollArea);
+    QVBoxLayout *contentLayout = new QVBoxLayout(contentWidget);
+    contentLayout->setContentsMargins(0, 0, 8, 0);
+    scrollArea->setWidget(contentWidget);
+    layout->addWidget(scrollArea);
+
+    QGroupBox *generalSettings = new QGroupBox("General Settings", contentWidget);
     QVBoxLayout *generalLayout = new QVBoxLayout(generalSettings);
 
     m_minimizeToTrayCheckBox = new QCheckBox("Minimize to tray on close", generalSettings);
@@ -29,9 +44,45 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     // QCheckBox *launchOnStartupCheckBox = new QCheckBox("Launch on startup", generalSettings);
     // generalLayout->addWidget(launchOnStartupCheckBox);
 
-    layout->addWidget(generalSettings);
+    contentLayout->addWidget(generalSettings);
 
-    QGroupBox *appearanceSettings = new QGroupBox("Appearance", this);
+    QGroupBox *hardwareSettings = new QGroupBox("Hardware", contentWidget);
+    QVBoxLayout *hardwareLayout = new QVBoxLayout(hardwareSettings);
+
+    hardwareLayout->addWidget(new QLabel("Inference backend", hardwareSettings));
+    m_backendComboBox = new QComboBox(hardwareSettings);
+    m_backendComboBox->addItem("CPU", static_cast<int>(InferenceBackend::Cpu));
+#ifdef _WIN32
+    m_backendComboBox->addItem("GPU (DirectML)", static_cast<int>(InferenceBackend::DirectML));
+#endif
+    hardwareLayout->addWidget(m_backendComboBox);
+
+    m_gpuLabel = new QLabel("GPU device", hardwareSettings);
+    hardwareLayout->addWidget(m_gpuLabel);
+    m_gpuComboBox = new QComboBox(hardwareSettings);
+    const std::vector<HardwareDeviceInfo> gpuDevices = enumerateDirectMLDevices();
+    for (const HardwareDeviceInfo &device : gpuDevices) {
+        m_gpuComboBox->addItem(QString::fromStdString(device.name), device.index);
+        m_gpuComboBox->setItemData(
+            m_gpuComboBox->count() - 1,
+            QString::fromStdString(device.id),
+            Qt::UserRole + 1);
+    }
+    if (gpuDevices.empty()) {
+        m_gpuComboBox->addItem("No DirectML GPU detected", -1);
+    }
+    hardwareLayout->addWidget(m_gpuComboBox);
+
+    m_cpuThreadLabel = new QLabel("CPU inference threads", hardwareSettings);
+    hardwareLayout->addWidget(m_cpuThreadLabel);
+    m_cpuThreadSpinBox = new QSpinBox(hardwareSettings);
+    m_cpuThreadSpinBox->setRange(1, 64);
+    m_cpuThreadSpinBox->setValue(4);
+    hardwareLayout->addWidget(m_cpuThreadSpinBox);
+
+    contentLayout->addWidget(hardwareSettings);
+
+    QGroupBox *appearanceSettings = new QGroupBox("Appearance", contentWidget);
     QVBoxLayout *appearanceLayout = new QVBoxLayout(appearanceSettings);
     appearanceLayout->addWidget(new QLabel("Theme", appearanceSettings));
     m_themeComboBox = new QComboBox(appearanceSettings);
@@ -39,9 +90,9 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     m_themeComboBox->addItem("Light", static_cast<int>(UserSettings::Theme::Light));
     m_themeComboBox->addItem("Dark", static_cast<int>(UserSettings::Theme::Dark));
     appearanceLayout->addWidget(m_themeComboBox);
-    layout->addWidget(appearanceSettings);
+    contentLayout->addWidget(appearanceSettings);
 
-    QGroupBox *performanceSettings = new QGroupBox("Performance", this);
+    QGroupBox *performanceSettings = new QGroupBox("Performance", contentWidget);
     QVBoxLayout *performanceLayout = new QVBoxLayout(performanceSettings);
 
     m_ignoreSmallScreenChangesCheckBox = new QCheckBox("Ignore small screen changes", performanceSettings);
@@ -57,10 +108,10 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     m_frameChangeSlider->setSingleStep(1);
     performanceLayout->addWidget(m_frameChangeSlider);
 
-    layout->addWidget(performanceSettings);
+    contentLayout->addWidget(performanceSettings);
 
-    QPushButton *resetButton = new QPushButton("Reset settings to default", this);
-    layout->addWidget(resetButton);
+    QPushButton *resetButton = new QPushButton("Reset settings to default", contentWidget);
+    contentLayout->addWidget(resetButton);
     connect(resetButton, &QPushButton::clicked, this, [this] {
         const QMessageBox::StandardButton choice = QMessageBox::question(
             this,
@@ -73,44 +124,18 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
         }
     });
 
-    connect(m_minimizeToTrayCheckBox, &QCheckBox::toggled, this, [this](bool) {
-        emit settingsChanged(
-            m_minimizeToTrayCheckBox->isChecked(),
-            m_ignoreSmallScreenChangesCheckBox->isChecked(),
-            m_frameChangeSlider->value() * 0.001f,
-            static_cast<UserSettings::Theme>(m_themeComboBox->currentData().toInt()));
-    });
-
-    connect(m_ignoreSmallScreenChangesCheckBox, &QCheckBox::toggled, this, [this](bool) {
-        updateFrameChangeControls();
-        emit settingsChanged(
-            m_minimizeToTrayCheckBox->isChecked(),
-            m_ignoreSmallScreenChangesCheckBox->isChecked(),
-            m_frameChangeSlider->value() * 0.001f,
-            static_cast<UserSettings::Theme>(m_themeComboBox->currentData().toInt()));
-    });
-
-    connect(m_frameChangeSlider, &QSlider::valueChanged, this, [this](int value) {
-        updateFrameChangeLabel(value);
-        emit settingsChanged(
-            m_minimizeToTrayCheckBox->isChecked(),
-            m_ignoreSmallScreenChangesCheckBox->isChecked(),
-                value * 0.001f,
-                static_cast<UserSettings::Theme>(m_themeComboBox->currentData().toInt()));
-    });
-
-    connect(m_themeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {
-    emit settingsChanged(
-        m_minimizeToTrayCheckBox->isChecked(),
-        m_ignoreSmallScreenChangesCheckBox->isChecked(),
-        m_frameChangeSlider->value() * 0.001f,
-        static_cast<UserSettings::Theme>(m_themeComboBox->currentData().toInt()));
-    });
+    connect(m_minimizeToTrayCheckBox, &QCheckBox::toggled, this, [this](bool) {emitCurrentSettings();});
+    connect(m_ignoreSmallScreenChangesCheckBox, &QCheckBox::toggled, this, [this](bool) {updateFrameChangeControls(); emitCurrentSettings();});
+    connect(m_frameChangeSlider, &QSlider::valueChanged, this, [this](int value) {updateFrameChangeLabel(value); emitCurrentSettings();});
+    connect(m_themeComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {emitCurrentSettings();});
+    connect(m_backendComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {updateFrameChangeControls(); emitCurrentSettings();});
+    connect(m_gpuComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {emitCurrentSettings();});
+    connect(m_cpuThreadSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {emitCurrentSettings();});
 
     updateFrameChangeLabel(m_frameChangeSlider->value());
     updateFrameChangeControls();
 
-    layout->addStretch();
+    contentLayout->addStretch();
 }
 
 void SettingsTab::setSettings(const UserSettings &settings) {
@@ -118,6 +143,9 @@ void SettingsTab::setSettings(const UserSettings &settings) {
     const QSignalBlocker ignoreBlocker(m_ignoreSmallScreenChangesCheckBox);
     const QSignalBlocker sliderBlocker(m_frameChangeSlider);
     const QSignalBlocker themeBlocker(m_themeComboBox);
+    const QSignalBlocker backendBlocker(m_backendComboBox);
+    const QSignalBlocker gpuBlocker(m_gpuComboBox);
+    const QSignalBlocker threadBlocker(m_cpuThreadSpinBox);
     m_minimizeToTrayCheckBox->setChecked(settings.minimizeToTray);
     m_ignoreSmallScreenChangesCheckBox->setChecked(settings.ignoreSmallScreenChanges);
     m_frameChangeSlider->setValue(qBound(0, qRound(settings.frameChangeThreshold / 0.001f), 100));
@@ -125,6 +153,21 @@ void SettingsTab::setSettings(const UserSettings &settings) {
     if (themeIndex >= 0) {
         m_themeComboBox->setCurrentIndex(themeIndex);
     }
+    const int backendIndex = m_backendComboBox->findData(static_cast<int>(settings.hardware.backend));
+    if (backendIndex >= 0) {
+        m_backendComboBox->setCurrentIndex(backendIndex);
+    }
+    int gpuIndex = -1;
+    if (!settings.hardware.deviceId.empty()) {
+        gpuIndex = m_gpuComboBox->findData(
+            QString::fromStdString(settings.hardware.deviceId),
+            Qt::UserRole + 1);
+    }
+    if (gpuIndex < 0){
+        gpuIndex = m_gpuComboBox->findData(settings.hardware.deviceIndex);
+    }
+    m_gpuComboBox->setCurrentIndex(gpuIndex >= 0 ? gpuIndex : 0);
+    m_cpuThreadSpinBox->setValue(qBound(1, settings.hardware.cpuThreadCount, 64));
     updateFrameChangeLabel(m_frameChangeSlider->value());
     updateFrameChangeControls();
 }
@@ -138,4 +181,23 @@ void SettingsTab::updateFrameChangeControls() {
     const bool enabled = m_ignoreSmallScreenChangesCheckBox->isChecked();
     m_frameChangeSlider->setEnabled(enabled);
     m_frameChangeLabel->setEnabled(enabled);
+    const bool directMlSelected = m_backendComboBox->currentData().toInt() == static_cast<int>(InferenceBackend::DirectML);
+    m_gpuComboBox->setEnabled(directMlSelected && m_gpuComboBox->currentData().toInt() >= 0);
+    m_gpuLabel->setVisible(directMlSelected);
+    m_gpuComboBox->setVisible(directMlSelected);
+    m_cpuThreadLabel->setVisible(!directMlSelected);
+    m_cpuThreadSpinBox->setVisible(!directMlSelected);
+    m_cpuThreadSpinBox->setEnabled(!directMlSelected);
+}
+
+void SettingsTab::emitCurrentSettings() {
+    emit settingsChanged(
+        m_minimizeToTrayCheckBox->isChecked(),
+        m_ignoreSmallScreenChangesCheckBox->isChecked(),
+        m_frameChangeSlider->value() * 0.001f,
+        static_cast<UserSettings::Theme>(m_themeComboBox->currentData().toInt()),
+        static_cast<InferenceBackend>(m_backendComboBox->currentData().toInt()),
+        m_gpuComboBox->currentData().toInt(),
+        m_gpuComboBox->currentData(Qt::UserRole + 1).toString(),
+        m_cpuThreadSpinBox->value());
 }

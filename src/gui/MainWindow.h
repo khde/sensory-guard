@@ -31,7 +31,7 @@ private:
     void updateTabIcons(UserSettings::Theme theme);
     void updateDetectionSettings(float sensitivity, const QStringList &enabledLabels, int maximumFps);
     void updateCensorSettings(int style, int intensity, float scale);
-    void updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme);
+    void updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount);
     void resetSettings();
 
     GuardEngine *m_engine;

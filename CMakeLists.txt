@@ -83,6 +83,8 @@ add_executable(SensorGuard
     src/inference/OnnxDetector.h
     src/inference/Detection.h
     src/inference/Labels.h
+    src/inference/HardwareDevices.h
+    src/inference/HardwareDevices.cpp
     src/config/UserSettings.h
     src/config/UserSettings.cpp
     src/platform/IScreenCapture.h

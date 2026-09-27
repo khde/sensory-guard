@@ -37,8 +37,12 @@ LinuxScreenCapture::~LinuxScreenCapture() {
         XCloseDisplay(m_display);
 }
 
+bool LinuxScreenCapture::isAvailable() const {
+    return m_display != nullptr && m_rootWindow != 0;
+}
+
 bool LinuxScreenCapture::captureFrame(cv::Mat &frame) {
-    if (m_display == nullptr || m_rootWindow == 0)
+    if (!isAvailable())
         return false;
 
     if (m_image != nullptr) {

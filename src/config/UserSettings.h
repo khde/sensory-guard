@@ -1,6 +1,8 @@
 #ifndef USERSETTINGS_H
 #define USERSETTINGS_H
 
+#include "engine/EngineConfig.h"
+
 #include <QStringList>
 
 struct UserSettings {
@@ -20,6 +22,7 @@ struct UserSettings {
     int censorIntensity = 20;
     float censorScale = 1.0f;
     Theme theme = Theme::System;
+    HardwareConfig hardware;
 
     static UserSettings defaults();
     static UserSettings load();

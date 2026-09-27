@@ -1,6 +1,7 @@
 #include "OnnxDetector.h"
 
 #include "inference/Labels.h"
+#include "inference/HardwareDevices.h"
 
 #ifdef SENSORGUARD_USE_DIRECTML
 #include <dml_provider_factory.h>
@@ -9,33 +10,56 @@
 #include <iostream>
 #include <algorithm>
 
-OnnxDetector::OnnxDetector(const std::string& modelPath) {
+OnnxDetector::OnnxDetector(
+    const std::string& modelPath,
+    const HardwareConfig &hardwareConfig,
+    InitializationError &errorCode,
+    std::string &errorMessage) {
     m_env = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "SensorGuardInference");
     m_sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 
+    if (hardwareConfig.cpuThreadCount < 1) {
+        errorCode = InitializationError::InvalidConfiguration;
+        errorMessage = "CPU thread count must be at least 1.";
+        return;
+    }
+
 #ifdef SENSORGUARD_USE_DIRECTML
-    m_sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
-    m_sessionOptions.DisableMemPattern();
-    OrtStatus *status = OrtSessionOptionsAppendExecutionProvider_DML(m_sessionOptions, 0);
-    if (status) {
-        std::cerr << "DirectML unavailable; using CPU inference: "
-                  << Ort::GetApi().GetErrorMessage(status) << std::endl;
-        Ort::GetApi().ReleaseStatus(status);
-        m_sessionOptions.SetIntraOpNumThreads(4);
+    if (hardwareConfig.backend == InferenceBackend::DirectML) {
+        int deviceIndex = hardwareConfig.deviceIndex;
+        if (!hardwareConfig.deviceId.empty()) {
+            deviceIndex = findDirectMLDeviceIndex(hardwareConfig.deviceId);
+            if (deviceIndex < 0) {
+                errorCode = InitializationError::DeviceUnavailable;
+                errorMessage = "The selected DirectML GPU is no longer available.";
+                return;
+            }
+        }
+        m_sessionOptions.SetExecutionMode(ExecutionMode::ORT_SEQUENTIAL);
+        m_sessionOptions.DisableMemPattern();
+        OrtStatus *status = OrtSessionOptionsAppendExecutionProvider_DML(
+            m_sessionOptions,
+            deviceIndex);
+        if (status) {
+            errorCode = InitializationError::DeviceUnavailable;
+            errorMessage = Ort::GetApi().GetErrorMessage(status);
+            Ort::GetApi().ReleaseStatus(status);
+            return;
+        }
+        std::cout << "Using DirectML GPU inference on device "
+                  << deviceIndex << "." << std::endl;
     } else {
-        std::cout << "Using DirectML GPU inference." << std::endl;
+        m_sessionOptions.SetIntraOpNumThreads(hardwareConfig.cpuThreadCount);
     }
 #else
-    m_sessionOptions.SetIntraOpNumThreads(4);
+    if (hardwareConfig.backend == InferenceBackend::DirectML) {
+        errorCode = InitializationError::BackendUnavailable;
+        errorMessage = "DirectML support is not available in this build.";
+        return;
+    }
+    m_sessionOptions.SetIntraOpNumThreads(hardwareConfig.cpuThreadCount);
 #endif
 
-    loadModel(modelPath);
-}
-
-OnnxDetector::~OnnxDetector() {
-}
-
-bool OnnxDetector::loadModel(const std::string& modelPath) {
     try {
 #ifdef _WIN32
         const std::wstring wideModelPath(modelPath.begin(), modelPath.end());
@@ -43,12 +67,17 @@ bool OnnxDetector::loadModel(const std::string& modelPath) {
 #else
         m_session = std::make_unique<Ort::Session>(m_env, modelPath.c_str(), m_sessionOptions);
 #endif
-        std::cout << "Successfully loaded ONNX model from: " << modelPath << std::endl;
-        return true;
+        m_ready = true;
     } catch (const Ort::Exception& e) {
-        std::cerr << "Failed to load ONNX model: " << e.what() << std::endl;
-        return false;
+        errorCode = InitializationError::ModelLoadFailed;
+        errorMessage = e.what();
     }
+}
+
+OnnxDetector::~OnnxDetector() = default;
+
+bool OnnxDetector::isReady() const {
+    return m_ready && m_session != nullptr;
 }
 
 std::vector<float> OnnxDetector::inference(const std::vector<float>& inputTensor) {

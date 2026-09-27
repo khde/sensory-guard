@@ -22,12 +22,7 @@ constexpr int kComparisonFrameHeight = 90;
 GuardEngine::GuardEngine(const std::string &modelPath, QObject *parent)
 	: QObject(parent),
 	  m_statsTimer(new QTimer(this)),
-	  m_detector(std::make_unique<OnnxDetector>(modelPath)) {
-#ifdef _WIN32
-	m_capture = std::make_unique<WindowsScreenCapture>();
-#elif defined(SENSORGUARD_HAS_X11)
-	m_capture = std::make_unique<LinuxScreenCapture>();
-#endif
+	  m_modelPath(modelPath) {
 
 	connect(m_statsTimer, &QTimer::timeout, this, &GuardEngine::tick);
 	m_statsTimer->setInterval(1000 / m_config.maxFps);
@@ -37,13 +32,57 @@ GuardEngine::GuardEngine(const std::string &modelPath, QObject *parent)
 
 GuardEngine::~GuardEngine() = default;
 
-void GuardEngine::start() {
+EngineStartResult GuardEngine::start() {
 	if (m_active)
-		return;
+		return {true, EngineErrorCode::None, {}};
+	auto fail = [this](EngineErrorCode code, const std::string &message) {
+		emit failed(QString::fromStdString(message));
+		return EngineStartResult{false, code, message};
+	};
+
+	std::unique_ptr<IScreenCapture> capture;
+#ifdef _WIN32
+	capture = std::make_unique<WindowsScreenCapture>();
+#elif defined(SENSORGUARD_HAS_X11)
+	capture = std::make_unique<LinuxScreenCapture>();
+#endif
+	if (!capture || !capture->isAvailable()){
+		return fail(EngineErrorCode::CaptureUnavailable, "Screen capture is unavailable.");
+	}
+
+	std::string detectorError;
+	OnnxDetector::InitializationError detectorErrorCode = OnnxDetector::InitializationError::None;
+	std::unique_ptr<OnnxDetector> detector = std::make_unique<OnnxDetector>(
+		m_modelPath,
+		m_config.hardware,
+		detectorErrorCode,
+		detectorError);
+	if (!detector->isReady()) {
+		EngineErrorCode engineErrorCode = EngineErrorCode::BackendUnavailable;
+		switch (detectorErrorCode) {
+			case OnnxDetector::InitializationError::InvalidConfiguration:
+				engineErrorCode = EngineErrorCode::InvalidConfiguration;
+				break;
+			case OnnxDetector::InitializationError::DeviceUnavailable:
+				engineErrorCode = EngineErrorCode::DeviceUnavailable;
+				break;
+			case OnnxDetector::InitializationError::ModelLoadFailed:
+				engineErrorCode = EngineErrorCode::ModelLoadFailed;
+				break;
+			case OnnxDetector::InitializationError::BackendUnavailable:
+			case OnnxDetector::InitializationError::None:
+				break;
+		}
+		return fail(engineErrorCode, detectorError);
+	}
+
+	m_capture = std::move(capture);
+	m_detector = std::move(detector);
 
 	m_active = true;
 	m_statsTimer->start();
 	emit activeChanged(true);
+	return {true, EngineErrorCode::None, {}};
 }
 
 void GuardEngine::stop() {
@@ -58,6 +97,8 @@ void GuardEngine::stop() {
 	m_differenceFrame.release();
 	m_lastDetections.clear();
 	m_frameProcessingIdle = false;
+	m_detector.reset();
+	m_capture.reset();
 	
 	std::vector<DetectionResult> emptyDetections;
 	emit detectionsUpdated(emptyDetections);

@@ -14,6 +14,7 @@ public:
     explicit WindowsScreenCapture(unsigned int outputIndex = 0);
     ~WindowsScreenCapture() override = default;
 
+    bool isAvailable() const override;
     bool captureFrame(cv::Mat &frame) override;
 
 private:

@@ -140,7 +140,7 @@ QLabel:disabled {
     color: #68747e;
 }
 
-QComboBox, QTextEdit {
+QComboBox, QSpinBox, QTextEdit {
     background: #15181d;
     color: #eef2f5;
     border: 1px solid #3a4650;
@@ -148,7 +148,7 @@ QComboBox, QTextEdit {
     padding: 7px 9px;
 }
 
-QComboBox:hover, QTextEdit:focus {
+QComboBox:hover, QSpinBox:hover, QComboBox:focus, QSpinBox:focus, QTextEdit:focus {
     border-color: #72d6b2;
 }
 
