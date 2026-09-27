@@ -31,6 +31,8 @@ CensorOverlay::CensorOverlay(QWidget *parent): QWidget(parent), m_censorStyle(st
 	setAttribute(Qt::WA_ShowWithoutActivating);
 }
 
+CensorOverlay::~CensorOverlay() = default;
+
 void CensorOverlay::showEvent(QShowEvent *event) {
 	QWidget::showEvent(event);
 	applyX11OverlayHints();

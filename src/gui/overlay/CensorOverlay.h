@@ -17,6 +17,7 @@ class CensorOverlay : public QWidget {
 
 public:
     explicit CensorOverlay(QWidget *parent = nullptr);
+    ~CensorOverlay() override;
 
     void setDetections(const std::vector<DetectionResult> &detections);
     void setSourceSize(const QSize &size);
