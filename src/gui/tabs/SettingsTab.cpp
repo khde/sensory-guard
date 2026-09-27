@@ -16,6 +16,9 @@
 #include <QSpinBox>
 #include <QScrollArea>
 #include <QFrame>
+#include <QDialog>
+#include <QDialogButtonBox>
+#include <QKeySequenceEdit>
 
 SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     QVBoxLayout *layout = new QVBoxLayout(this);
@@ -107,6 +110,15 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     appearanceLayout->addWidget(m_themeComboBox);
     contentLayout->addWidget(appearanceSettings);
 
+    QGroupBox *toggleHotkeySettings = new QGroupBox("Toggle shortcut", contentWidget);
+    QVBoxLayout *toggleHotkeyLayout = new QVBoxLayout(toggleHotkeySettings);
+    m_toggleHotkeyCheckBox = new QCheckBox("Enable toggle shortcut", toggleHotkeySettings);
+    m_toggleHotkeyCheckBox->setChecked(true);
+    toggleHotkeyLayout->addWidget(m_toggleHotkeyCheckBox);
+    m_toggleHotkeyButton = new QPushButton("Set toggle shortcut: Ctrl+Alt+Shift+S", toggleHotkeySettings);
+    toggleHotkeyLayout->addWidget(m_toggleHotkeyButton);
+    contentLayout->addWidget(toggleHotkeySettings);
+
     QGroupBox *performanceSettings = new QGroupBox("Performance", contentWidget);
     QVBoxLayout *performanceLayout = new QVBoxLayout(performanceSettings);
 
@@ -147,6 +159,28 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     connect(m_gpuComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {emitCurrentSettings();});
     connect(m_cpuThreadSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int) {emitCurrentSettings();});
     connect(m_displayComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int) {emitCurrentSettings();});
+    connect(m_toggleHotkeyCheckBox, &QCheckBox::toggled, this, [this](bool) {emitCurrentSettings();});
+    connect(m_toggleHotkeyButton, &QPushButton::clicked, this, [this] {
+        QDialog dialog(this);
+        dialog.setWindowTitle("Set global toggle shortcut");
+        QVBoxLayout dialogLayout(&dialog);
+        dialogLayout.addWidget(new QLabel("Press the shortcut you want to use.", &dialog));
+
+        QKeySequenceEdit editor(QKeySequence::fromString(m_toggleHotkey, QKeySequence::PortableText), &dialog);
+        editor.setMaximumSequenceLength(1);
+        dialogLayout.addWidget(&editor);
+
+        QDialogButtonBox buttons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dialog);
+        dialogLayout.addWidget(&buttons);
+        connect(&buttons, &QDialogButtonBox::accepted, &dialog, &QDialog::accept);
+        connect(&buttons, &QDialogButtonBox::rejected, &dialog, &QDialog::reject);
+
+        if (dialog.exec() == QDialog::Accepted && !editor.keySequence().isEmpty()) {
+            m_toggleHotkey = editor.keySequence().toString(QKeySequence::PortableText);
+            m_toggleHotkeyButton->setText("Set toggle shortcut: " + m_toggleHotkey);
+            emitCurrentSettings();
+        }
+    });
 
     updateFrameChangeLabel(m_frameChangeSlider->value());
     updateFrameChangeControls();
@@ -163,6 +197,7 @@ void SettingsTab::setSettings(const UserSettings &settings) {
     const QSignalBlocker gpuBlocker(m_gpuComboBox);
     const QSignalBlocker threadBlocker(m_cpuThreadSpinBox);
     const QSignalBlocker displayBlocker(m_displayComboBox);
+    const QSignalBlocker toggleHotkeyBlocker(m_toggleHotkeyCheckBox);
     m_minimizeToTrayCheckBox->setChecked(settings.minimizeToTray);
     m_ignoreSmallScreenChangesCheckBox->setChecked(settings.ignoreSmallScreenChanges);
     m_frameChangeSlider->setValue(qBound(0, qRound(settings.frameChangeThreshold / 0.001f), 100));
@@ -205,6 +240,9 @@ void SettingsTab::setSettings(const UserSettings &settings) {
     }
     if (displayIndex >= 0)
         m_displayComboBox->setCurrentIndex(displayIndex);
+    m_toggleHotkeyCheckBox->setChecked(settings.toggleHotkeyEnabled);
+    m_toggleHotkey = settings.toggleHotkey;
+    m_toggleHotkeyButton->setText("Set toggle shortcut: " + m_toggleHotkey);
     updateFrameChangeLabel(m_frameChangeSlider->value());
     updateFrameChangeControls();
 }
@@ -237,5 +275,7 @@ void SettingsTab::emitCurrentSettings() {
         m_gpuComboBox->currentData().toInt(),
         m_gpuComboBox->currentData(Qt::UserRole + 1).toString(),
         m_cpuThreadSpinBox->value(),
-        m_displayComboBox->currentData().toString());
+        m_displayComboBox->currentData().toString(),
+        m_toggleHotkeyCheckBox->isChecked(),
+        m_toggleHotkey);
 }

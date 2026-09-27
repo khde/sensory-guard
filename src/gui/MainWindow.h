@@ -15,6 +15,7 @@ class SettingsTab;
 class QLabel;
 class QSystemTrayIcon;
 class QAction;
+class ToggleHotkey;
 
 class MainWindow : public QMainWindow {
     Q_OBJECT
@@ -31,7 +32,7 @@ private:
     void updateTabIcons(UserSettings::Theme theme);
     void updateDetectionSettings(float sensitivity, const QStringList &enabledLabels, int maximumFps);
     void updateCensorSettings(int style, int intensity, float scale);
-    void updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId);
+    void updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId, bool toggleHotkeyEnabled, const QString &toggleHotkey);
     void resetSettings();
 
     GuardEngine *m_engine;
@@ -50,6 +51,7 @@ private:
 
 protected:
     void closeEvent(QCloseEvent *event) override;
+    ToggleHotkey *m_toggleHotkey = nullptr;
 };
 
 #endif

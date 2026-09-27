@@ -11,6 +11,7 @@
 #include "overlay/CensoringConfig.h"
 #include "theme/ThemeManager.h"
 #include "widgets/ResponsiveTabWidget.h"
+#include "platform/ToggleHotkey.h"
 
 #include <QLabel>
 #include <QStyle>
@@ -56,6 +57,16 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     setMinimumSize(390, 580);
 
     m_userSettings = UserSettings::load();
+
+    m_toggleHotkey = new ToggleHotkey(this, this);
+    connect(m_toggleHotkey, &ToggleHotkey::activated, this, [this] {
+        if (m_engine->isActive()) {
+            m_engine->stop();
+        } else {
+            m_engine->start();
+        }
+    });
+    connect(m_toggleHotkey, &ToggleHotkey::error, this, [this](const QString &message) {QMessageBox::warning(this, "Global shortcut unavailable", message);});
 
     setCentralWidget(m_tabWidget);
     m_statusLabel->setObjectName("statusLabel");
@@ -190,6 +201,7 @@ void MainWindow::applyUserSettings() {
     m_overlay->setCensoringConfig(censoringConfig);
 
     m_minimizeToTray = m_userSettings.minimizeToTray;
+    m_toggleHotkey->update(m_userSettings.toggleHotkeyEnabled, m_userSettings.toggleHotkey);
 
     if (restartRequired) {
         const EngineStartResult result = m_engine->start();
@@ -216,7 +228,7 @@ void MainWindow::updateCensorSettings(int style, int intensity, float scale) {
     m_userSettings.save();
 }
 
-void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId) {
+void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId, bool toggleHotkeyEnabled, const QString &toggleHotkey) {
     m_userSettings.minimizeToTray = minimizeToTray;
     m_userSettings.ignoreSmallScreenChanges = ignoreSmallScreenChanges;
     m_userSettings.frameChangeThreshold = frameChangeThreshold;
@@ -226,6 +238,8 @@ void MainWindow::updateGeneralSettings(bool minimizeToTray, bool ignoreSmallScre
     m_userSettings.hardware.deviceId = deviceId.toStdString();
     m_userSettings.hardware.cpuThreadCount = cpuThreadCount;
     m_userSettings.display.displayId = displayId.toStdString();
+    m_userSettings.toggleHotkeyEnabled = toggleHotkeyEnabled;
+    m_userSettings.toggleHotkey = toggleHotkey;
     applyUserSettings();
     ThemeManager::apply(theme);
     updateTabIcons(theme);

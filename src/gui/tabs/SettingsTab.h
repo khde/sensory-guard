@@ -10,6 +10,7 @@
 class QComboBox;
 class QLabel;
 class QSpinBox;
+class QPushButton;
 
 class SettingsTab : public QWidget {
     Q_OBJECT
@@ -34,9 +35,12 @@ private:
     QLabel *m_cpuThreadLabel;
     QSpinBox *m_cpuThreadSpinBox;
     QComboBox *m_displayComboBox;
+    QCheckBox *m_toggleHotkeyCheckBox;
+    QPushButton *m_toggleHotkeyButton;
+    QString m_toggleHotkey;
 
 signals:
-    void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId);
+    void settingsChanged(bool minimizeToTray, bool ignoreSmallScreenChanges, float frameChangeThreshold, UserSettings::Theme theme, InferenceBackend backend, int deviceIndex, const QString &deviceId, int cpuThreadCount, const QString &displayId, bool toggleHotkeyEnabled, const QString &toggleHotkey);
     void resetRequested();
 };
 

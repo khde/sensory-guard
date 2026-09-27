@@ -24,6 +24,8 @@ struct UserSettings {
     Theme theme = Theme::System;
     HardwareConfig hardware;
     DisplayConfig display;
+    bool toggleHotkeyEnabled = false;
+    QString toggleHotkey = "Ctrl+Alt+Shift+S";
 
     static UserSettings defaults();
     static UserSettings load();

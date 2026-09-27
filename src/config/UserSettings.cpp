@@ -46,13 +46,15 @@ UserSettings UserSettings::load() {
     settings.hardware.deviceIndex = storage.value("hardware/deviceIndex", fallback.hardware.deviceIndex).toInt();
     settings.hardware.deviceId = storage.value("hardware/deviceId", QString::fromStdString(fallback.hardware.deviceId)).toString().toStdString();
     settings.hardware.cpuThreadCount = storage.value("hardware/cpuThreadCount", fallback.hardware.cpuThreadCount).toInt();
-    if (settings.hardware.deviceIndex < 0){
+    if (settings.hardware.deviceIndex < 0) {
         settings.hardware.deviceIndex = fallback.hardware.deviceIndex;
     }
-    if (settings.hardware.cpuThreadCount < 1){
+    if (settings.hardware.cpuThreadCount < 1) {
         settings.hardware.cpuThreadCount = fallback.hardware.cpuThreadCount;
     }
     settings.display.displayId = storage.value("display/displayId", QString::fromStdString(fallback.display.displayId)).toString().toStdString();
+    settings.toggleHotkeyEnabled = storage.value("toggleHotkeyEnabled", storage.value("hotkeyEnabled", storage.value("globalHotkeyEnabled", fallback.toggleHotkeyEnabled))).toBool();
+    settings.toggleHotkey = storage.value("toggleHotkey", storage.value("hotkey", storage.value("globalHotkey", fallback.toggleHotkey))).toString();
     const int theme = storage.value("theme", static_cast<int>(fallback.theme)).toInt();
     if (theme >= static_cast<int>(UserSettings::Theme::Dark) && theme <= static_cast<int>(UserSettings::Theme::System)) {
         settings.theme = static_cast<UserSettings::Theme>(theme);
@@ -77,6 +79,8 @@ void UserSettings::save() const {
     storage.setValue("hardware/deviceId", QString::fromStdString(hardware.deviceId));
     storage.setValue("hardware/cpuThreadCount", hardware.cpuThreadCount);
     storage.setValue("display/displayId", QString::fromStdString(display.displayId));
+    storage.setValue("toggleHotkeyEnabled", toggleHotkeyEnabled);
+    storage.setValue("toggleHotkey", toggleHotkey);
     storage.setValue("theme", static_cast<int>(theme));
     storage.sync();
 }

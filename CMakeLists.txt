@@ -89,6 +89,8 @@ add_executable(SensorGuard
     src/platform/IScreenCapture.h
     src/platform/DisplayDevices.h
     src/platform/DisplayDevices.cpp
+    src/platform/ToggleHotkey.h
+    src/platform/ToggleHotkey.cpp
 )
 
 target_include_directories(SensorGuard PRIVATE
