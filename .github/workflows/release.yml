@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  BUILD_TYPE: Release
+  VCPKG_DEFAULT_TRIPLET: x64-windows
+
+jobs:
+  build-windows:
+    runs-on: windows-2022
+    env:
+      VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}\vcpkg-binary-cache
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Cache vcpkg binaries
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}\vcpkg-binary-cache
+          key: vcpkg-${{ runner.os }}-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) {
+            throw "VCPKG_INSTALLATION_ROOT is not available on this runner."
+          }
+
+          & "$vcpkgRoot\vcpkg.exe" install `
+            --triplet $env:VCPKG_DEFAULT_TRIPLET `
+            --clean-after-build
+          if ($LASTEXITCODE -ne 0) {
+            throw "vcpkg dependency installation failed."
+          }
+
+      - name: Configure CMake
+        shell: pwsh
+        run: |
+          $version = "0.0.0-dev"
+          if ($env:GITHUB_REF -like "refs/tags/v*") {
+            $version = $env:GITHUB_REF_NAME.Substring(1)
+          }
+
+          cmake -S . -B build-release `
+            -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=$env:VCPKG_DEFAULT_TRIPLET `
+            -DSENSORGUARD_VERSION=$version `
+            -DSENSORGUARD_ENABLE_DIRECTML=ON
+          if ($LASTEXITCODE -ne 0) {
+            throw "CMake configuration failed."
+          }
+
+      - name: Build Release
+        shell: pwsh
+        run: |
+          cmake --build build-release --config $env:BUILD_TYPE --parallel
+          if ($LASTEXITCODE -ne 0) {
+            throw "Release build failed."
+          }
+
+      - name: Stage package
+        shell: pwsh
+        run: |
+          $packageRoot = Join-Path $env:GITHUB_WORKSPACE "package\SensorGuard"
+          $outputDirectory = Join-Path $env:GITHUB_WORKSPACE "build-release\$env:BUILD_TYPE"
+          $archiveName = "SensorGuard-windows-x64-$env:GITHUB_REF_NAME.zip"
+          $archivePath = Join-Path $env:GITHUB_WORKSPACE $archiveName
+
+          if (-not (Test-Path $outputDirectory)) {
+            throw "Build output directory was not found: $outputDirectory"
+          }
+
+          New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
+          Copy-Item -Path (Join-Path $outputDirectory "*") -Destination $packageRoot -Recurse -Force
+
+          Compress-Archive -Path $packageRoot -DestinationPath $archivePath -CompressionLevel Optimal -Force
+
+      - name: Upload Windows package
+        uses: actions/upload-artifact@v4
+        with:
+          name: SensorGuard-windows-package
+          path: SensorGuard-windows-x64-${{ github.ref_name }}.zip
+          if-no-files-found: error
+
+  publish-release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build-windows
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Windows package
+        uses: actions/download-artifact@v4
+        with:
+          name: SensorGuard-windows-package
+          path: release-assets
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            "release-assets/SensorGuard-windows-x64-$GITHUB_REF_NAME.zip" \
+            --generate-notes \
+            --title "Sensor Guard $GITHUB_REF_NAME"
