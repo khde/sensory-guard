@@ -69,6 +69,7 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     connect(m_toggleHotkey, &ToggleHotkey::error, this, [this](const QString &message) {QMessageBox::warning(this, "Global shortcut unavailable", message);});
 
     setCentralWidget(m_tabWidget);
+    statusBar()->setSizeGripEnabled(false);
     m_statusLabel->setObjectName("statusLabel");
     m_statusValue->setObjectName("statusValue");
     statusBar()->addWidget(m_statusLabel);

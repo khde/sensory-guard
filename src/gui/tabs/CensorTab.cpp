@@ -113,7 +113,7 @@ void CensorTab::onCensoringStyleChanged(int index) {
 void CensorTab::updateIntensityLabel(int value) {
     int style = m_censoringStyleCombo->currentData().toInt();
     
-    if (style == static_cast<int>(CensoringStyle::GaussianBlur)) {
+    if (style == static_cast<int>(CensoringStyle::GaussianBlur) || style == static_cast<int>(CensoringStyle::BoxBlur)) {
         m_intensityLabel->setText("Blur Intensity: " + QString::number(value));
     } else if (style == static_cast<int>(CensoringStyle::Pixelation)) {
         m_intensityLabel->setText("Pixel Size: " + QString::number(value));
