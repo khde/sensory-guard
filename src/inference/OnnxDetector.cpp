@@ -14,8 +14,8 @@ OnnxDetector::OnnxDetector(
     const std::string& modelPath,
     const HardwareConfig &hardwareConfig,
     InitializationError &errorCode,
-    std::string &errorMessage) {
-    m_env = Ort::Env(ORT_LOGGING_LEVEL_WARNING, "SensorGuardInference");
+    std::string &errorMessage)
+    : m_env(ORT_LOGGING_LEVEL_WARNING, "SensorGuardInference") {
     m_sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 
     if (hardwareConfig.cpuThreadCount < 1) {
