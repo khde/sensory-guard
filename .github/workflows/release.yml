@@ -16,8 +16,6 @@ env:
 jobs:
   build-windows:
     runs-on: windows-2022
-    env:
-      VCPKG_DEFAULT_BINARY_CACHE: vcpkg-binary-cache
 
     steps:
       - name: Check out source
@@ -26,7 +24,7 @@ jobs:
       - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
-          path: vcpkg-binary-cache
+          path: ${{ runner.temp }}\vcpkg-binary-cache
           key: vcpkg-${{ runner.os }}-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
 
       - name: Install dependencies
@@ -36,6 +34,10 @@ jobs:
           if (-not $vcpkgRoot) {
             throw "VCPKG_INSTALLATION_ROOT is not available on this runner."
           }
+
+          $binaryCache = Join-Path $env:RUNNER_TEMP "vcpkg-binary-cache"
+          New-Item -ItemType Directory -Force -Path $binaryCache | Out-Null
+          $env:VCPKG_DEFAULT_BINARY_CACHE = $binaryCache
 
           & "$vcpkgRoot\vcpkg.exe" install `
             --triplet $env:VCPKG_DEFAULT_TRIPLET `
