@@ -121,14 +121,6 @@ if(WIN32)
     if(SENSORGUARD_ENABLE_DIRECTML)
         add_dependencies(SensorGuard SensorGuardDirectMLRuntime)
         target_compile_definitions(SensorGuard PRIVATE SENSORGUARD_USE_DIRECTML)
-        add_custom_command(TARGET SensorGuard POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime.dll"
-                "$<TARGET_FILE_DIR:SensorGuard>"
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime_providers_shared.dll"
-                "$<TARGET_FILE_DIR:SensorGuard>"
-        )
     endif()
 
     if(DEFINED VCPKG_INSTALLED_DIR AND DEFINED VCPKG_TARGET_TRIPLET)
@@ -147,6 +139,17 @@ if(WIN32)
             "$<IF:$<CONFIG:Debug>,${SENSORGUARD_VCPKG_ROOT}/debug/Qt6/plugins/platforms,${SENSORGUARD_VCPKG_ROOT}/Qt6/plugins/platforms>"
             "$<TARGET_FILE_DIR:SensorGuard>/platforms"
     )
+
+    if(SENSORGUARD_ENABLE_DIRECTML)
+        add_custom_command(TARGET SensorGuard POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime.dll"
+                "$<TARGET_FILE_DIR:SensorGuard>"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${SENSORGUARD_DIRECTML_NATIVE_DIR}/onnxruntime_providers_shared.dll"
+                "$<TARGET_FILE_DIR:SensorGuard>"
+        )
+    endif()
 endif()
 
 if(UNIX AND NOT APPLE)
