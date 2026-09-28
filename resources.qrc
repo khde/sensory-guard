@@ -1,4 +1,7 @@
 <RCC>
+    <qresource prefix="/">
+        <file>LICENSE</file>
+    </qresource>
     <qresource prefix="/theme">
         <file alias="dark.qss">src/gui/theme/dark.qss</file>
         <file alias="light.qss">src/gui/theme/light.qss</file>

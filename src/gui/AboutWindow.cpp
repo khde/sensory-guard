@@ -8,6 +8,7 @@
 #include <QScrollArea>
 #include <QFrame>
 #include <QPixmap>
+#include <QFile>
 
 AboutWindow::AboutWindow(const QString &version, QWidget *parent): QDialog(parent) {
     setWindowTitle("About Sensor Guard");
@@ -73,7 +74,9 @@ void AboutWindow::setupUi() {
 
     QTextEdit *licenseText = new QTextEdit();
     licenseText->setReadOnly(true);
-    licenseText->setPlainText("My License");
+    QFile licenseFile(":/LICENSE");
+    licenseFile.open(QIODevice::ReadOnly | QIODevice::Text);
+    licenseText->setPlainText(QString::fromUtf8(licenseFile.readAll()));
     licenseLayout->addWidget(licenseText);
     tabWidget->addTab(licenseWidget, "License");
 
