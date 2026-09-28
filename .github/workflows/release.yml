@@ -17,7 +17,7 @@ jobs:
   build-windows:
     runs-on: windows-2022
     env:
-      VCPKG_DEFAULT_BINARY_CACHE: ${{ runner.temp }}\vcpkg-binary-cache
+      VCPKG_DEFAULT_BINARY_CACHE: vcpkg-binary-cache
 
     steps:
       - name: Check out source
@@ -26,7 +26,7 @@ jobs:
       - name: Cache vcpkg binaries
         uses: actions/cache@v4
         with:
-          path: ${{ runner.temp }}\vcpkg-binary-cache
+          path: vcpkg-binary-cache
           key: vcpkg-${{ runner.os }}-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
 
       - name: Install dependencies
