@@ -14,10 +14,10 @@ AboutWindow::AboutWindow(const QString &version, QWidget *parent): QDialog(paren
     setWindowTitle("About Sensor Guard");
     setWindowModality(Qt::NonModal);
     setFixedSize(390, 350);
-    setupUi();
+    setupUi(version);
 }
 
-void AboutWindow::setupUi() {
+void AboutWindow::setupUi(const QString &version) {
     QVBoxLayout *mainLayout = new QVBoxLayout(this);
 
     // Header = logo + name + version
@@ -34,7 +34,7 @@ void AboutWindow::setupUi() {
     nameLabel->setStyleSheet("font-weight: bold; font-size: 16px;");
     nameLayout->addWidget(nameLabel);
     
-    QLabel *versionLabel = new QLabel("Version 0.1.0");
+    QLabel *versionLabel = new QLabel("Version v" + version);
     versionLabel->setStyleSheet("color: gray; font-size: 11px;");
     nameLayout->addWidget(versionLabel);
     nameLayout->addStretch();

@@ -10,7 +10,7 @@ public:
     explicit AboutWindow(const QString &version, QWidget *parent = nullptr);
 
 private:
-    void setupUi();
+    void setupUi(const QString &version);
 };
 
 #endif

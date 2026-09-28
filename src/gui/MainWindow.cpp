@@ -74,7 +74,9 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     m_statusValue->setObjectName("statusValue");
     statusBar()->addWidget(m_statusLabel);
     statusBar()->addWidget(m_statusValue);
-    QPushButton *versionLabel = new QPushButton("Sensor Guard v0.1.0", this);
+    QPushButton *versionLabel = new QPushButton(
+        "Sensor Guard v" + QCoreApplication::applicationVersion(),
+        this);
     versionLabel->setObjectName("versionLabel");
     versionLabel->setFlat(true);
     versionLabel->setFocusPolicy(Qt::NoFocus);
@@ -327,7 +329,7 @@ void MainWindow::closeEvent(QCloseEvent *event) {
 
 void MainWindow::showAboutWindow() {
     if (!m_aboutWindow) {
-        m_aboutWindow = new AboutWindow("0.1.0", this);
+        m_aboutWindow = new AboutWindow(QCoreApplication::applicationVersion(), this);
     }
     m_aboutWindow->show();
     m_aboutWindow->raise();
