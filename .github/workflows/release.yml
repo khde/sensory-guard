@@ -11,7 +11,7 @@ permissions:
 
 env:
   BUILD_TYPE: Release
-  VCPKG_DEFAULT_TRIPLET: x64-windows
+  DEPENDENCY_RELEASE_TAG: dependencies-windows-x64-v1
 
 jobs:
   build-windows:
@@ -21,59 +21,48 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Cache vcpkg binaries
-        id: vcpkg-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ runner.os }}-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
-
-      - name: Install dependencies
+      - name: Download dependency bundle
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
-          if (-not $vcpkgRoot) {
-            throw "VCPKG_INSTALLATION_ROOT is not available on this runner."
-          }
-
-          $binaryCache = Join-Path $env:RUNNER_TEMP "vcpkg-binary-cache"
-          New-Item -ItemType Directory -Force -Path $binaryCache | Out-Null
-          $env:VCPKG_DEFAULT_BINARY_CACHE = $binaryCache
-          "VCPKG_DEFAULT_BINARY_CACHE=$binaryCache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
-
-          & "$vcpkgRoot\vcpkg.exe" install `
-            --triplet $env:VCPKG_DEFAULT_TRIPLET `
-            --clean-after-build
+          $bundleArchive = Join-Path $env:RUNNER_TEMP "SensoryGuard-windows-deps-x64.zip"
+          gh release download $env:DEPENDENCY_RELEASE_TAG `
+            --repo $env:GITHUB_REPOSITORY `
+            --pattern "SensoryGuard-windows-deps-x64.zip" `
+            --output $bundleArchive
           if ($LASTEXITCODE -ne 0) {
-            throw "vcpkg dependency installation failed."
+            throw "Dependency bundle download failed."
           }
 
-      - name: Save vcpkg binaries
-        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ runner.temp }}\vcpkg-binary-cache
-          key: vcpkg-${{ runner.os }}-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
+          $dependencyRoot = Join-Path $env:GITHUB_WORKSPACE "dependencies"
+          New-Item -ItemType Directory -Force -Path $dependencyRoot | Out-Null
+          Expand-Archive -Path $bundleArchive -DestinationPath $dependencyRoot -Force
+          "SENSORYGUARD_DEPENDENCY_ROOT=$dependencyRoot" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          $vcpkgRoot = Join-Path $dependencyRoot "vcpkg\x64-windows"
+          $directmlRoot = Join-Path $dependencyRoot "onnxruntime-directml"
+          if (-not (Test-Path (Join-Path $vcpkgRoot "share\Qt6\Qt6Config.cmake"))) {
+            throw "Qt development files are missing from the dependency bundle."
+          }
+          if (-not (Test-Path (Join-Path $vcpkgRoot "include\opencv4\opencv2\opencv.hpp"))) {
+            throw "OpenCV development files are missing from the dependency bundle."
+          }
+          if (-not (Test-Path (Join-Path $directmlRoot "runtimes\win-x64\native\onnxruntime.dll"))) {
+            throw "ONNX Runtime DirectML files are missing from the dependency bundle."
+          }
 
       - name: Configure CMake
         shell: pwsh
         run: |
-          $triplet = $env:VCPKG_DEFAULT_TRIPLET
-          if ([string]::IsNullOrWhiteSpace($triplet)) {
-            throw "VCPKG_DEFAULT_TRIPLET is not available on this runner."
-          }
-
           $version = "0.0.0-dev"
           if ($env:GITHUB_REF -like "refs/tags/v*") {
             $version = $env:GITHUB_REF_NAME.Substring(1)
           }
 
-          Write-Output "Using vcpkg triplet: $triplet"
-
           cmake -S . -B build-release `
             -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE `
-            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
-            "-DVCPKG_TARGET_TRIPLET=$triplet" `
+            "-DSENSORYGUARD_DEPENDENCY_ROOT=$env:SENSORYGUARD_DEPENDENCY_ROOT" `
             "-DSENSORYGUARD_VERSION=$version" `
             -DSENSORYGUARD_ENABLE_DIRECTML=ON
           if ($LASTEXITCODE -ne 0) {

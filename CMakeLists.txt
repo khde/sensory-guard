@@ -10,6 +10,12 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
 
+set(SENSORYGUARD_DEPENDENCY_ROOT "" CACHE PATH "Root of the prebuilt Windows dependency bundle")
+if(WIN32 AND SENSORYGUARD_DEPENDENCY_ROOT)
+    set(SENSORYGUARD_VCPKG_ROOT "${SENSORYGUARD_DEPENDENCY_ROOT}/vcpkg/x64-windows")
+    list(PREPEND CMAKE_PREFIX_PATH "${SENSORYGUARD_VCPKG_ROOT}")
+endif()
+
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(OpenCV REQUIRED COMPONENTS core imgproc dnn video CONFIG)
 
@@ -29,26 +35,34 @@ set(SENSORYGUARD_ONNXRUNTIME_LIBRARY ${ONNXRUNTIME_LIBRARY})
 if(WIN32)
     option(SENSORYGUARD_ENABLE_DIRECTML "Enable DirectML GPU inference on Windows" ON)
     if(SENSORYGUARD_ENABLE_DIRECTML)
-        include(ExternalProject)
-        set(SENSORYGUARD_DIRECTML_ROOT "${CMAKE_BINARY_DIR}/onnxruntime-directml")
+        if(SENSORYGUARD_DEPENDENCY_ROOT)
+            set(SENSORYGUARD_DIRECTML_ROOT "${SENSORYGUARD_DEPENDENCY_ROOT}/onnxruntime-directml")
+        else()
+            include(ExternalProject)
+            set(SENSORYGUARD_DIRECTML_ROOT "${CMAKE_BINARY_DIR}/onnxruntime-directml")
+        endif()
         set(SENSORYGUARD_DIRECTML_NATIVE_DIR "${SENSORYGUARD_DIRECTML_ROOT}/runtimes/win-x64/native")
         set(SENSORYGUARD_DIRECTML_INCLUDE_DIR "${SENSORYGUARD_DIRECTML_ROOT}/build/native/include")
 
-        ExternalProject_Add(SensoryGuardDirectMLRuntime
-            URL "https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/1.24.4"
-            SOURCE_DIR "${SENSORYGUARD_DIRECTML_ROOT}"
-            CONFIGURE_COMMAND ""
-            BUILD_COMMAND ""
-            INSTALL_COMMAND ""
-            UPDATE_COMMAND ""
-        )
+        if(NOT SENSORYGUARD_DEPENDENCY_ROOT)
+            ExternalProject_Add(SensoryGuardDirectMLRuntime
+                URL "https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/1.24.4"
+                SOURCE_DIR "${SENSORYGUARD_DIRECTML_ROOT}"
+                CONFIGURE_COMMAND ""
+                BUILD_COMMAND ""
+                INSTALL_COMMAND ""
+                UPDATE_COMMAND ""
+            )
+        endif()
 
         add_library(SensoryGuardDirectML SHARED IMPORTED GLOBAL)
         set_target_properties(SensoryGuardDirectML PROPERTIES
             IMPORTED_IMPLIB "${SENSORYGUARD_DIRECTML_NATIVE_DIR}/onnxruntime.lib"
             IMPORTED_LOCATION "${SENSORYGUARD_DIRECTML_NATIVE_DIR}/onnxruntime.dll"
         )
-        add_dependencies(SensoryGuardDirectML SensoryGuardDirectMLRuntime)
+        if(NOT SENSORYGUARD_DEPENDENCY_ROOT)
+            add_dependencies(SensoryGuardDirectML SensoryGuardDirectMLRuntime)
+        endif()
         set(SENSORYGUARD_ONNXRUNTIME_INCLUDE_DIR ${SENSORYGUARD_DIRECTML_INCLUDE_DIR})
         set(SENSORYGUARD_ONNXRUNTIME_LIBRARY SensoryGuardDirectML)
     endif()
@@ -125,7 +139,9 @@ if(WIN32)
     target_compile_definitions(SensoryGuard PRIVATE NOMINMAX WIN32_LEAN_AND_MEAN)
 
     if(SENSORYGUARD_ENABLE_DIRECTML)
-        add_dependencies(SensoryGuard SensoryGuardDirectMLRuntime)
+        if(NOT SENSORYGUARD_DEPENDENCY_ROOT)
+            add_dependencies(SensoryGuard SensoryGuardDirectMLRuntime)
+        endif()
         target_compile_definitions(SensoryGuard PRIVATE SENSORYGUARD_USE_DIRECTML)
     endif()
 

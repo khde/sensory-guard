@@ -1,0 +1,117 @@
+name: Build Windows dependency bundle
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  VCPKG_DEFAULT_TRIPLET: x64-windows
+  DEPENDENCY_RELEASE_TAG: dependencies-windows-x64-v1
+  ONNXRUNTIME_DIRECTML_VERSION: 1.24.4
+
+jobs:
+  build-dependencies:
+    runs-on: windows-2022
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Cache vcpkg binaries
+        id: vcpkg-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}\vcpkg-binary-cache
+          key: vcpkg-${{ runner.os }}-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Build vcpkg dependencies
+        shell: pwsh
+        run: |
+          $vcpkgRoot = $env:VCPKG_INSTALLATION_ROOT
+          if (-not $vcpkgRoot) {
+            throw "VCPKG_INSTALLATION_ROOT is not available on this runner."
+          }
+
+          $binaryCache = Join-Path $env:RUNNER_TEMP "vcpkg-binary-cache"
+          New-Item -ItemType Directory -Force -Path $binaryCache | Out-Null
+          $env:VCPKG_DEFAULT_BINARY_CACHE = $binaryCache
+          "VCPKG_DEFAULT_BINARY_CACHE=$binaryCache" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+          & "$vcpkgRoot\vcpkg.exe" install `
+            --triplet $env:VCPKG_DEFAULT_TRIPLET `
+            --clean-after-build
+          if ($LASTEXITCODE -ne 0) {
+            throw "vcpkg dependency installation failed."
+          }
+
+      - name: Save vcpkg binaries
+        if: steps.vcpkg-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}\vcpkg-binary-cache
+          key: vcpkg-${{ runner.os }}-${{ env.VCPKG_DEFAULT_TRIPLET }}-${{ hashFiles('vcpkg.json') }}
+
+      - name: Download DirectML ONNX Runtime
+        shell: pwsh
+        run: |
+          $directmlRoot = Join-Path $env:GITHUB_WORKSPACE "package\SensoryGuard-windows-deps-x64\onnxruntime-directml"
+          $archive = Join-Path $env:RUNNER_TEMP "onnxruntime-directml.zip"
+          New-Item -ItemType Directory -Force -Path $directmlRoot | Out-Null
+          Invoke-WebRequest `
+            -Uri "https://www.nuget.org/api/v2/package/Microsoft.ML.OnnxRuntime.DirectML/$env:ONNXRUNTIME_DIRECTML_VERSION" `
+            -OutFile $archive
+          Expand-Archive -Path $archive -DestinationPath $directmlRoot -Force
+
+      - name: Stage dependency bundle
+        shell: pwsh
+        run: |
+          $packageRoot = Join-Path $env:GITHUB_WORKSPACE "package\SensoryGuard-windows-deps-x64"
+          $vcpkgInstalled = Join-Path $env:GITHUB_WORKSPACE "vcpkg_installed\x64-windows"
+          $vcpkgDestination = Join-Path $packageRoot "vcpkg\x64-windows"
+          $archivePath = Join-Path $env:GITHUB_WORKSPACE "SensoryGuard-windows-deps-x64.zip"
+
+          if (-not (Test-Path $vcpkgInstalled)) {
+            throw "vcpkg installed directory was not found: $vcpkgInstalled"
+          }
+
+          New-Item -ItemType Directory -Force -Path $vcpkgDestination | Out-Null
+          Copy-Item -Path (Join-Path $vcpkgInstalled "*") -Destination $vcpkgDestination -Recurse -Force
+          Compress-Archive -Path (Join-Path $packageRoot "*") -DestinationPath $archivePath -CompressionLevel Optimal -Force
+
+      - name: Upload dependency bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SensoryGuard-windows-deps-x64
+          path: SensoryGuard-windows-deps-x64.zip
+          if-no-files-found: error
+
+  publish-dependency-bundle:
+    needs: build-dependencies
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download dependency bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: SensoryGuard-windows-deps-x64
+          path: release-assets
+
+      - name: Publish dependency bundle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view "$DEPENDENCY_RELEASE_TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$DEPENDENCY_RELEASE_TAG" \
+              --repo "$GITHUB_REPOSITORY" \
+              --title "Sensory Guard Windows dependencies v1" \
+              --notes "Prebuilt Windows x64 development and runtime dependencies for Sensory Guard releases." \
+              --prerelease \
+              --target "$GITHUB_SHA"
+          fi
+
+          gh release upload "$DEPENDENCY_RELEASE_TAG" \
+            --repo "$GITHUB_REPOSITORY" \
+            "release-assets/SensoryGuard-windows-deps-x64.zip" \
+            --clobber
