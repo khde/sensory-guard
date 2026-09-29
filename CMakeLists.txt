@@ -68,7 +68,11 @@ if(WIN32)
     endif()
 endif()
 
-add_executable(SensoryGuard
+if(WIN32)
+    set(SENSORYGUARD_EXECUTABLE_TYPE WIN32)
+endif()
+
+add_executable(SensoryGuard ${SENSORYGUARD_EXECUTABLE_TYPE}
     src/main.cpp
     src/gui/MainWindow.h
     src/gui/MainWindow.cpp

@@ -75,8 +75,9 @@ void AboutWindow::setupUi(const QString &version) {
     QTextEdit *licenseText = new QTextEdit();
     licenseText->setReadOnly(true);
     QFile licenseFile(":/LICENSE");
-    licenseFile.open(QIODevice::ReadOnly | QIODevice::Text);
-    licenseText->setPlainText(QString::fromUtf8(licenseFile.readAll()));
+    if (licenseFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        licenseText->setPlainText(QString::fromUtf8(licenseFile.readAll()));
+    }
     licenseLayout->addWidget(licenseText);
     tabWidget->addTab(licenseWidget, "License");
 
