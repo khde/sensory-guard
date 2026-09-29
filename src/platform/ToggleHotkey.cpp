@@ -72,7 +72,7 @@ bool convertWindowsHotkey(const QString &shortcut, UINT &modifiers, UINT &virtua
 }
 #endif
 
-#ifdef SENSORGUARD_HAS_X11
+#ifdef SENSORYGUARD_HAS_X11
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <QSocketNotifier>
@@ -173,7 +173,7 @@ void ToggleHotkey::update(bool enabled, const QString &shortcut) {
     if (enabled && !registerWindowsHotkey(shortcut)) {
         return;
     }
-#elif defined(SENSORGUARD_HAS_X11)
+#elif defined(SENSORYGUARD_HAS_X11)
     unregisterX11Hotkey();
     m_enabled = false;
 
@@ -222,7 +222,7 @@ bool ToggleHotkey::nativeEventFilter(const QByteArray &, void *message, qintptr 
 }
 #endif
 
-#ifdef SENSORGUARD_HAS_X11
+#ifdef SENSORYGUARD_HAS_X11
 bool ToggleHotkey::registerX11Hotkey(const QString &shortcut) {
     Display *display = XOpenDisplay(nullptr);
     if (display == nullptr) {

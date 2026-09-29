@@ -5,7 +5,7 @@
 
 #ifdef _WIN32
 	#include "platform/WindowsCapture.h"
-#elif defined(SENSORGUARD_HAS_X11)
+#elif defined(SENSORYGUARD_HAS_X11)
 	#include "platform/LinuxCapture.h"
 #endif
 
@@ -52,7 +52,7 @@ EngineStartResult GuardEngine::start() {
 				: "The selected monitor is no longer available.");
 	}
 	capture = std::make_unique<WindowsScreenCapture>(display);
-#elif defined(SENSORGUARD_HAS_X11)
+#elif defined(SENSORYGUARD_HAS_X11)
 	capture = std::make_unique<LinuxScreenCapture>();
 #endif
 	if (!capture || !capture->isAvailable()){

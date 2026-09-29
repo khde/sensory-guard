@@ -1,6 +1,6 @@
 #include "LinuxCapture.h"
 
-#ifdef SENSORGUARD_HAS_X11
+#ifdef SENSORYGUARD_HAS_X11
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

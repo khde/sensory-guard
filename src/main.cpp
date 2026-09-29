@@ -10,9 +10,9 @@
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
     QApplication::setWindowIcon(QIcon(":/icons/logo.png"));
-    QCoreApplication::setOrganizationName("SensorGuard");
-    QCoreApplication::setApplicationName("SensorGuard");
-    QCoreApplication::setApplicationVersion(SENSORGUARD_VERSION);
+    QCoreApplication::setOrganizationName("SensoryGuard");
+    QCoreApplication::setApplicationName("SensoryGuard");
+    QCoreApplication::setApplicationVersion(SENSORYGUARD_VERSION);
 
     const UserSettings userSettings = UserSettings::load();
     ThemeManager::apply(userSettings.theme);

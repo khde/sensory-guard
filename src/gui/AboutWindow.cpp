@@ -11,7 +11,7 @@
 #include <QFile>
 
 AboutWindow::AboutWindow(const QString &version, QWidget *parent): QDialog(parent) {
-    setWindowTitle("About Sensor Guard");
+    setWindowTitle("About Sensory Guard");
     setWindowModality(Qt::NonModal);
     setFixedSize(390, 350);
     setupUi(version);
@@ -30,7 +30,7 @@ void AboutWindow::setupUi(const QString &version) {
     headerLayout->addWidget(logoLabel);
 
     QVBoxLayout *nameLayout = new QVBoxLayout();
-    QLabel *nameLabel = new QLabel("Sensor Guard");
+    QLabel *nameLabel = new QLabel("Sensory Guard");
     nameLabel->setStyleSheet("font-weight: bold; font-size: 16px;");
     nameLayout->addWidget(nameLabel);
     
@@ -54,7 +54,7 @@ void AboutWindow::setupUi(const QString &version) {
     QVBoxLayout *aboutLayout = new QVBoxLayout(aboutWidget);
 
     QLabel *descLabel = new QLabel();
-    descLabel->setText("Sensor Guard is an offline, real-time NSFW screen censor application that uses an on-device machine learning model to detect and censor sensitive content live on the screen.");
+    descLabel->setText("Sensory Guard is an offline, real-time NSFW screen censor application that uses an on-device machine learning model to detect and censor sensitive content live on the screen.");
     descLabel->setWordWrap(true);
     descLabel->setStyleSheet("font-size: 12px;");
     aboutLayout->addWidget(descLabel);

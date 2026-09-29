@@ -8,7 +8,7 @@
 #include <QImage>
 #include <opencv2/imgproc.hpp>
 
-#ifdef SENSORGUARD_HAS_X11
+#ifdef SENSORYGUARD_HAS_X11
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/extensions/shape.h>
@@ -42,7 +42,7 @@ void CensorOverlay::showEvent(QShowEvent *event) {
 }
 
 void CensorOverlay::applyX11OverlayHints() {
-#ifdef SENSORGUARD_HAS_X11
+#ifdef SENSORYGUARD_HAS_X11
 	Display *display = XOpenDisplay(nullptr);
 	if (!display)
 		return;

@@ -74,8 +74,8 @@ jobs:
             -DCMAKE_BUILD_TYPE=$env:BUILD_TYPE `
             -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" `
             "-DVCPKG_TARGET_TRIPLET=$triplet" `
-            "-DSENSORGUARD_VERSION=$version" `
-            -DSENSORGUARD_ENABLE_DIRECTML=ON
+            "-DSENSORYGUARD_VERSION=$version" `
+            -DSENSORYGUARD_ENABLE_DIRECTML=ON
           if ($LASTEXITCODE -ne 0) {
             throw "CMake configuration failed."
           }
@@ -91,9 +91,9 @@ jobs:
       - name: Stage package
         shell: pwsh
         run: |
-          $packageRoot = Join-Path $env:GITHUB_WORKSPACE "package\SensorGuard"
+          $packageRoot = Join-Path $env:GITHUB_WORKSPACE "package\SensoryGuard"
           $outputDirectory = Join-Path $env:GITHUB_WORKSPACE "build-release\$env:BUILD_TYPE"
-          $archiveName = "SensorGuard-windows-x64-$env:GITHUB_REF_NAME.zip"
+          $archiveName = "SensoryGuard-windows-x64-$env:GITHUB_REF_NAME.zip"
           $archivePath = Join-Path $env:GITHUB_WORKSPACE $archiveName
 
           if (-not (Test-Path $outputDirectory)) {
@@ -108,8 +108,8 @@ jobs:
       - name: Upload Windows package
         uses: actions/upload-artifact@v4
         with:
-          name: SensorGuard-windows-package
-          path: SensorGuard-windows-x64-${{ github.ref_name }}.zip
+          name: SensoryGuard-windows-package
+          path: SensoryGuard-windows-x64-${{ github.ref_name }}.zip
           if-no-files-found: error
 
   publish-release:
@@ -121,7 +121,7 @@ jobs:
       - name: Download Windows package
         uses: actions/download-artifact@v4
         with:
-          name: SensorGuard-windows-package
+          name: SensoryGuard-windows-package
           path: release-assets
 
       - name: Publish GitHub Release
@@ -129,6 +129,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            "release-assets/SensorGuard-windows-x64-$GITHUB_REF_NAME.zip" \
+            "release-assets/SensoryGuard-windows-x64-$GITHUB_REF_NAME.zip" \
             --generate-notes \
-            --title "Sensor Guard $GITHUB_REF_NAME"
+            --title "Sensory Guard $GITHUB_REF_NAME"

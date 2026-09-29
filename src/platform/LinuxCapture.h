@@ -1,7 +1,7 @@
 #ifndef LINUX_CAPTURE_H
 #define LINUX_CAPTURE_H
 
-#ifdef SENSORGUARD_HAS_X11
+#ifdef SENSORYGUARD_HAS_X11
 
 #include "platform/IScreenCapture.h"
 

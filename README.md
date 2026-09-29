@@ -1,6 +1,6 @@
-# Sensor Guard
+# Sensory Guard
 
-Sensor Guard is an offline, real-time NSFW screen censor desktop application that uses an on-device machine learning model to detect and censor sensitive content live on the screen.
+Sensory Guard is an offline, real-time NSFW screen censor desktop application that uses an on-device machine learning model to detect and censor sensitive content live on the screen.
 
 ## Features
 
@@ -46,7 +46,7 @@ cmake --build build
 ### Run
 
 ```bash
-./build/SensorGuard
+./build/SensoryGuard
 ```
 
 ## Windows
@@ -80,9 +80,9 @@ cmake --build build --config Release --parallel
 ### Run
 
 ```powershell
-.\build\Release\SensorGuard.exe
+.\build\Release\SensoryGuard.exe
 ```
 
 ## License
 
-Sensor Guard is licensed under the MIT License. See [LICENSE](LICENSE) for the full license text.
+Sensory Guard is licensed under the MIT License. See [LICENSE](LICENSE) for the full license text.

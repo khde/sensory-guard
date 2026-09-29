@@ -30,7 +30,7 @@ private:
     bool registerWindowsHotkey(const QString &shortcut);
     bool nativeEventFilter(const QByteArray &eventType, void *message, qintptr *result) override;
 #endif
-#ifdef SENSORGUARD_HAS_X11
+#ifdef SENSORYGUARD_HAS_X11
     bool registerX11Hotkey(const QString &shortcut);
     void handleX11Events();
     void unregisterX11Hotkey();

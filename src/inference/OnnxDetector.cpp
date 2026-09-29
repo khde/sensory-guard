@@ -3,7 +3,7 @@
 #include "inference/Labels.h"
 #include "inference/HardwareDevices.h"
 
-#ifdef SENSORGUARD_USE_DIRECTML
+#ifdef SENSORYGUARD_USE_DIRECTML
 #include <dml_provider_factory.h>
 #endif
 
@@ -15,7 +15,7 @@ OnnxDetector::OnnxDetector(
     const HardwareConfig &hardwareConfig,
     InitializationError &errorCode,
     std::string &errorMessage)
-    : m_env(ORT_LOGGING_LEVEL_WARNING, "SensorGuardInference") {
+    : m_env(ORT_LOGGING_LEVEL_WARNING, "SensoryGuardInference") {
     m_sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_ALL);
 
     if (hardwareConfig.cpuThreadCount < 1) {
@@ -24,7 +24,7 @@ OnnxDetector::OnnxDetector(
         return;
     }
 
-#ifdef SENSORGUARD_USE_DIRECTML
+#ifdef SENSORYGUARD_USE_DIRECTML
     if (hardwareConfig.backend == InferenceBackend::DirectML) {
         int deviceIndex = hardwareConfig.deviceIndex;
         if (!hardwareConfig.deviceId.empty()) {

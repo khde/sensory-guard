@@ -53,7 +53,7 @@ QIcon loadTabIcon(const QString &resourcePath, const QColor &color) {
 }
 
 MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent), m_engine(engine), m_tabWidget(new ResponsiveTabWidget(this)), m_statusLabel(new QLabel("Status:", this)), m_statusValue(new QLabel(this)), m_overlay(new CensorOverlay(nullptr)) {
-    setWindowTitle("Sensor Guard");
+    setWindowTitle("Sensory Guard");
     setMinimumSize(390, 580);
 
     m_userSettings = UserSettings::load();
@@ -75,7 +75,7 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     statusBar()->addWidget(m_statusLabel);
     statusBar()->addWidget(m_statusValue);
     QPushButton *versionLabel = new QPushButton(
-        "Sensor Guard v" + QCoreApplication::applicationVersion(),
+        "Sensory Guard v" + QCoreApplication::applicationVersion(),
         this);
     versionLabel->setObjectName("versionLabel");
     versionLabel->setFlat(true);
@@ -97,7 +97,7 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
         m_statusValue->setProperty("active", false);
         m_statusValue->style()->unpolish(m_statusValue);
         m_statusValue->style()->polish(m_statusValue);
-        QMessageBox::critical(this, "Sensor Guard could not start", message);
+        QMessageBox::critical(this, "Sensory Guard could not start", message);
     });
     connect(m_engine, &GuardEngine::frameSizeChanged, this, [this](int width, int height) {
         m_overlay->setSourceSize(QSize(width, height));
@@ -263,10 +263,10 @@ void MainWindow::resetSettings() {
 void MainWindow::setupTrayIcon() {
     m_trayIcon = new QSystemTrayIcon(this);
     m_trayIcon->setIcon(QIcon(":/icons/logo.png"));
-    m_trayIcon->setToolTip("Sensor Guard");
+    m_trayIcon->setToolTip("Sensory Guard");
 
     QMenu *trayMenu = new QMenu(this);
-    QAction *showAction = trayMenu->addAction("Sensor Guard");
+    QAction *showAction = trayMenu->addAction("Sensory Guard");
     trayMenu->addSeparator();
     m_toggleAction = trayMenu->addAction(m_engine->isActive() ? "Deactivate" : "Activate");
     trayMenu->addSeparator();
