@@ -59,7 +59,7 @@ void AboutWindow::setupUi(const QString &version) {
     descLabel->setStyleSheet("font-size: 12px;");
     aboutLayout->addWidget(descLabel);
 
-    QLabel *websiteLabel = new QLabel("Website: <a href='https://github.com/khde/sensor-guard' style='color: #0066cc;'>https://github.com/khde/sensor-guard</a>");
+    QLabel *websiteLabel = new QLabel("Website: <a href='https://github.com/khde/sensory-guard' style='color: #0066cc;'>https://github.com/khde/sensory-guard</a>");
     websiteLabel->setOpenExternalLinks(true);
     websiteLabel->setStyleSheet("font-size: 11px; margin-top: 12px;");
     websiteLabel->setWordWrap(true);
