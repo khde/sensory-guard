@@ -1,5 +1,5 @@
 {
-  "name": "sensor-guard",
+  "name": "sensory-guard",
   "version": "0.1.0",
   "dependencies": [
     "opencv",

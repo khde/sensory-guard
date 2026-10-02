@@ -92,6 +92,9 @@ jobs:
           New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
           Copy-Item -Path (Join-Path $outputDirectory "*") -Destination $packageRoot -Recurse -Force
 
+          Get-ChildItem -Path $packageRoot -Include "*.pdb", "*.ilk", "*.exp", "*.lib" -File -Recurse |
+            Remove-Item -Force
+
           Compress-Archive -Path $packageRoot -DestinationPath $archivePath -CompressionLevel Optimal -Force
 
       - name: Upload Windows package
