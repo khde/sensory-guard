@@ -34,8 +34,14 @@ The application is built with:
 - Qt
 - OpenCV
 - ONNX Runtime
+- NudeNet model ([download separately](https://github.com/notAI-tech/NudeNet))
 
 ## Installation
+
+### Models
+
+> [!IMPORTANT]
+> The model is not included in this repository or its releases. Download it separately and place it at `data/models/640m.onnx`, next to the application executable.
 
 ### Linux
 
