@@ -16,6 +16,7 @@ struct DisplayDescriptor {
 
     int adapterIndex = -1;
     int outputIndex = -1;
+    unsigned long nativeWindowId = 0;
 
     int captureWidth = 0;
     int captureHeight = 0;

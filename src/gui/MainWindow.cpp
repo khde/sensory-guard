@@ -102,11 +102,14 @@ MainWindow::MainWindow(GuardEngine *engine, QWidget *parent): QMainWindow(parent
     connect(m_engine, &GuardEngine::frameSizeChanged, this, [this](int width, int height) {
         m_overlay->setSourceSize(QSize(width, height));
     });
+    connect(m_engine, &GuardEngine::frameGeometryChanged, m_overlay, [this](int x, int y, int width, int height) {
+        m_overlay->setGeometry(x, y, width, height);
+    });
     connect(m_engine, &GuardEngine::frameCaptured, m_overlay, &CensorOverlay::setSourceFrame);
     connect(m_engine, &GuardEngine::detectionsUpdated, m_overlay, &CensorOverlay::setDetections);
     connect(m_engine, &GuardEngine::activeChanged, m_overlay, [this](bool active) {
         if (active) {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(SENSORYGUARD_HAS_X11)
             const DisplayDescriptor &display = m_engine->display();
             m_overlay->setGeometry(display.desktopX, display.desktopY, display.desktopWidth, display.desktopHeight);
 #else
@@ -186,6 +189,7 @@ void MainWindow::applyUserSettings() {
         m_engine->stop();
 
     engineConfig.confidenceThreshold = m_userSettings.sensitivity;
+    engineConfig.ignoreSmallScreenChanges = m_userSettings.ignoreSmallScreenChanges;
     engineConfig.frameChangeThreshold = m_userSettings.frameChangeThreshold;
     engineConfig.maxFps = m_userSettings.maximumFps;
     engineConfig.hardware = m_userSettings.hardware;

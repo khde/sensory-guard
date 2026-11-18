@@ -115,6 +115,151 @@ bool resolveDisplay(const std::string &displayId, DisplayDescriptor &descriptor)
     return false;
 }
 
+#elif defined(SENSORYGUARD_HAS_X11)
+
+#include "platform/X11ErrorTrap.h"
+
+#include <X11/Xatom.h>
+
+#include <unistd.h>
+#include <utility>
+
+namespace {
+
+std::string windowTitle(Display *display, Window window) {
+    const Atom nameAtom = XInternAtom(display, "_NET_WM_NAME", True);
+    const Atom utf8Atom = XInternAtom(display, "UTF8_STRING", True);
+    if (nameAtom != None && utf8Atom != None) {
+        Atom actualType = None;
+        int actualFormat = 0;
+        unsigned long itemCount = 0;
+        unsigned long bytesAfter = 0;
+        unsigned char *property = nullptr;
+        if (XGetWindowProperty(
+                display, window, nameAtom, 0, 1024, False, utf8Atom,
+                &actualType, &actualFormat, &itemCount, &bytesAfter, &property) == Success &&
+            property != nullptr && actualFormat == 8) {
+            const std::string title(reinterpret_cast<char *>(property), itemCount);
+            XFree(property);
+            if (!title.empty())
+                return title;
+        } else if (property != nullptr) {
+            XFree(property);
+        }
+    }
+
+    char *legacyTitle = nullptr;
+    if (XFetchName(display, window, &legacyTitle) == 0 || legacyTitle == nullptr)
+        return {};
+    const std::string title(legacyTitle);
+    XFree(legacyTitle);
+    return title;
+}
+
+bool belongsToCurrentProcess(Display *display, Window window) {
+    const Atom pidAtom = XInternAtom(display, "_NET_WM_PID", True);
+    if (pidAtom == None)
+        return false;
+
+    Atom actualType = None;
+    int actualFormat = 0;
+    unsigned long itemCount = 0;
+    unsigned long bytesAfter = 0;
+    unsigned char *property = nullptr;
+    const int result = XGetWindowProperty(
+        display, window, pidAtom, 0, 1, False, XA_CARDINAL,
+        &actualType, &actualFormat, &itemCount, &bytesAfter, &property);
+    if (result != Success || property == nullptr || actualFormat != 32 || itemCount == 0) {
+        if (property != nullptr)
+            XFree(property);
+        return false;
+    }
+
+    const unsigned long processId = *reinterpret_cast<unsigned long *>(property);
+    XFree(property);
+    return processId == static_cast<unsigned long>(getpid());
+}
+
+void collectWindows(Display *display, Window parent, std::vector<DisplayDescriptor> &windows) {
+    Window root = 0;
+    Window parentReturn = 0;
+    Window *children = nullptr;
+    unsigned int childCount = 0;
+    if (!XQueryTree(display, parent, &root, &parentReturn, &children, &childCount))
+        return;
+
+    for (unsigned int index = 0; index < childCount; ++index) {
+        const Window window = children[index];
+        XWindowAttributes attributes{};
+        if (XGetWindowAttributes(display, window, &attributes) != 0 &&
+            attributes.c_class == InputOutput &&
+            attributes.map_state == IsViewable &&
+            attributes.width >= 80 && attributes.height >= 50 &&
+            !belongsToCurrentProcess(display, window)) {
+            const std::string title = windowTitle(display, window);
+            if (!title.empty()) {
+                int rootX = 0;
+                int rootY = 0;
+                Window child = 0;
+                if (XTranslateCoordinates(
+                        display, window, DefaultRootWindow(display), 0, 0,
+                        &rootX, &rootY, &child)) {
+                    DisplayDescriptor descriptor;
+                    descriptor.id = std::to_string(static_cast<unsigned long>(window));
+                    descriptor.name = title;
+                    descriptor.desktopX = rootX;
+                    descriptor.desktopY = rootY;
+                    descriptor.desktopWidth = attributes.width;
+                    descriptor.desktopHeight = attributes.height;
+                    descriptor.captureWidth = attributes.width;
+                    descriptor.captureHeight = attributes.height;
+                    descriptor.nativeWindowId = static_cast<unsigned long>(window);
+                    windows.push_back(std::move(descriptor));
+                }
+            }
+        }
+
+        collectWindows(display, window, windows);
+    }
+
+    if (children != nullptr)
+        XFree(children);
+}
+
+}
+
+std::vector<DisplayDescriptor> enumerateDisplays() {
+    std::vector<DisplayDescriptor> windows;
+    Display *display = XOpenDisplay(nullptr);
+    if (display == nullptr)
+        return windows;
+
+    {
+        X11ErrorTrap trap(display);
+        collectWindows(display, DefaultRootWindow(display), windows);
+    }
+    XCloseDisplay(display);
+    return windows;
+}
+
+bool resolveDisplay(const std::string &displayId, DisplayDescriptor &descriptor) {
+    const std::vector<DisplayDescriptor> windows = enumerateDisplays();
+    if (displayId.empty()) {
+        if (windows.empty())
+            return false;
+        descriptor = windows.front();
+        return true;
+    }
+
+    for (const DisplayDescriptor &window : windows) {
+        if (window.id == displayId) {
+            descriptor = window;
+            return true;
+        }
+    }
+    return false;
+}
+
 #else
 
 std::vector<DisplayDescriptor> enumerateDisplays() {

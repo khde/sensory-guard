@@ -185,6 +185,7 @@ if(UNIX AND NOT APPLE)
         target_sources(SensoryGuard PRIVATE
             src/platform/LinuxCapture.h
             src/platform/LinuxCapture.cpp
+            src/platform/X11ErrorTrap.h
         )
         target_include_directories(SensoryGuard PRIVATE ${X11_INCLUDE_DIR})
         target_link_libraries(SensoryGuard PRIVATE ${X11_LIBRARIES})
@@ -193,5 +194,6 @@ if(UNIX AND NOT APPLE)
         else()
             target_link_libraries(SensoryGuard PRIVATE Xext)
         endif()
+        target_link_libraries(SensoryGuard PRIVATE ${CMAKE_DL_LIBS})
     endif()
 endif()

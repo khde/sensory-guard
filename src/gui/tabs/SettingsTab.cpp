@@ -5,6 +5,7 @@
 
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QGroupBox>
 #include <QCheckBox>
 #include <QComboBox>
@@ -53,8 +54,48 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
     QGroupBox *hardwareSettings = new QGroupBox("Hardware", contentWidget);
     QVBoxLayout *hardwareLayout = new QVBoxLayout(hardwareSettings);
 
+#ifdef SENSORYGUARD_HAS_X11
+    hardwareLayout->addWidget(new QLabel("Window", hardwareSettings));
+#else
     hardwareLayout->addWidget(new QLabel("Monitor", hardwareSettings));
+#endif
     m_displayComboBox = new QComboBox(hardwareSettings);
+#ifdef SENSORYGUARD_HAS_X11
+    auto refreshWindows = [this](bool notify) {
+        const QString selectedId = m_displayComboBox->currentData().toString();
+        {
+            const QSignalBlocker blocker(m_displayComboBox);
+            m_displayComboBox->clear();
+            const std::vector<DisplayDescriptor> windows = enumerateDisplays();
+            for (const DisplayDescriptor &window : windows) {
+                m_displayComboBox->addItem(
+                    QString::fromStdString(window.name) + " - " +
+                        QString::number(window.desktopWidth) + "x" + QString::number(window.desktopHeight),
+                    QString::fromStdString(window.id));
+            }
+            if (windows.empty()) {
+                m_displayComboBox->addItem("No visible windows detected");
+                m_displayComboBox->setEnabled(false);
+            } else {
+                m_displayComboBox->setEnabled(true);
+                const int selectedIndex = m_displayComboBox->findData(selectedId);
+                m_displayComboBox->setCurrentIndex(selectedIndex >= 0 ? selectedIndex : 0);
+            }
+        }
+        if (notify)
+            emitCurrentSettings();
+    };
+    refreshWindows(false);
+    QHBoxLayout *windowTargetLayout = new QHBoxLayout();
+    windowTargetLayout->addWidget(m_displayComboBox, 1);
+    QPushButton *refreshWindowsButton = new QPushButton("Refresh", hardwareSettings);
+    refreshWindowsButton->setToolTip("Refresh the list of visible X11 windows");
+    windowTargetLayout->addWidget(refreshWindowsButton);
+    hardwareLayout->addLayout(windowTargetLayout);
+    connect(refreshWindowsButton, &QPushButton::clicked, this, [refreshWindows] {
+        refreshWindows(true);
+    });
+#else
     const std::vector<DisplayDescriptor> displays = enumerateDisplays();
     for (const DisplayDescriptor &display : displays) {
         m_displayComboBox->addItem(
@@ -66,6 +107,7 @@ SettingsTab::SettingsTab(QWidget *parent) : QWidget(parent) {
         m_displayComboBox->setEnabled(false);
     }
     hardwareLayout->addWidget(m_displayComboBox);
+#endif
 
     hardwareLayout->addWidget(new QLabel("Inference backend", hardwareSettings));
     m_backendComboBox = new QComboBox(hardwareSettings);
@@ -223,10 +265,18 @@ void SettingsTab::setSettings(const UserSettings &settings) {
     int displayIndex = m_displayComboBox->findData(QString::fromStdString(settings.display.displayId));
     if (displayIndex < 0 && !settings.display.displayId.empty()) {
         m_displayComboBox->addItem(
+#ifdef SENSORYGUARD_HAS_X11
+            "Unavailable window - " + QString::fromStdString(settings.display.displayId), QString::fromStdString(settings.display.displayId));
+#else
             "Unavailable monitor - " + QString::fromStdString(settings.display.displayId), QString::fromStdString(settings.display.displayId));
+#endif
         displayIndex = m_displayComboBox->count() - 1;
     }
     if (displayIndex < 0 && settings.display.displayId.empty() && m_displayComboBox->count() > 0) {
+#ifdef SENSORYGUARD_HAS_X11
+        // resolveDisplay() falls back to the first listed window.
+        displayIndex = 0;
+#else
         const std::vector<DisplayDescriptor> displays = enumerateDisplays();
         for (int index = 0; index < static_cast<int>(displays.size()); ++index) {
             if (displays[static_cast<size_t>(index)].desktopX == 0 &&
@@ -237,6 +287,7 @@ void SettingsTab::setSettings(const UserSettings &settings) {
         }
         if (displayIndex < 0)
             displayIndex = 0;
+#endif
     }
     if (displayIndex >= 0)
         m_displayComboBox->setCurrentIndex(displayIndex);

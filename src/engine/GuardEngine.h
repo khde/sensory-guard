@@ -63,6 +63,7 @@ private:
 	cv::Mat m_differenceFrame;
 	std::vector<DetectionResult> m_lastDetections;
 	bool m_frameProcessingIdle = false;
+	std::string m_lastCaptureError;
 
 	// FPS tracking
 	int m_frameCount = 0;
@@ -73,6 +74,7 @@ signals:
 	void activeChanged(bool active);
 	void fpsUpdated(double currentFps, double targetFps);
 	void frameSizeChanged(int width, int height);
+	void frameGeometryChanged(int x, int y, int width, int height);
 	void detectionsUpdated(const std::vector<DetectionResult> &detections);
 	void frameCaptured(const cv::Mat &frame);
 	void failed(const QString &message);

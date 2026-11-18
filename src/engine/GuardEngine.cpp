@@ -12,6 +12,7 @@
 #include <opencv2/imgproc.hpp>
 #include <QTimer>
 #include <QString>
+#include <QDebug>
 #include <algorithm>
 
 namespace {
@@ -42,8 +43,9 @@ EngineStartResult GuardEngine::start() {
 	};
 
 	std::unique_ptr<IScreenCapture> capture;
-#ifdef _WIN32
 	DisplayDescriptor display;
+	m_lastCaptureError.clear();
+#ifdef _WIN32
 	if (!resolveDisplay(m_config.display.displayId, display)) {
 		return fail(
 			EngineErrorCode::DisplayUnavailable,
@@ -53,9 +55,16 @@ EngineStartResult GuardEngine::start() {
 	}
 	capture = std::make_unique<WindowsScreenCapture>(display);
 #elif defined(SENSORYGUARD_HAS_X11)
-	capture = std::make_unique<LinuxScreenCapture>();
+	if (!resolveDisplay(m_config.display.displayId, display)) {
+		return fail(
+			EngineErrorCode::DisplayUnavailable,
+			m_config.display.displayId.empty()
+				? "No visible X11 window was found. Refresh the window list and select a window."
+				: "The selected X11 window is no longer available. Refresh the window list and select another window.");
+	}
+	capture = std::make_unique<LinuxScreenCapture>(display.nativeWindowId);
 #endif
-	if (!capture || !capture->isAvailable()){
+	if (!capture || !capture->isAvailable()) {
 		return fail(EngineErrorCode::CaptureUnavailable, "Screen capture is unavailable.");
 	}
 
@@ -87,7 +96,7 @@ EngineStartResult GuardEngine::start() {
 
 	m_capture = std::move(capture);
 	m_detector = std::move(detector);
-#ifdef _WIN32
+#if defined(_WIN32) || defined(SENSORYGUARD_HAS_X11)
 	m_display = display;
 #endif
 
@@ -174,11 +183,24 @@ bool GuardEngine::shouldRunInference(const cv::Mat &bgrFrame) {
 void GuardEngine::tick() {
 	cv::Mat capturedFrame;
 	if (!m_capture->captureFrame(capturedFrame)) {
+		const std::string error = m_capture->lastCaptureError();
+		if (!error.empty() && error != m_lastCaptureError) {
+			qWarning().noquote() << "Screen capture failed:" << QString::fromStdString(error);
+			m_lastCaptureError = error;
+		}
 		// Clear stale detections when frame capture fails
 		std::vector<DetectionResult> emptyDetections;
 		emit detectionsUpdated(emptyDetections);
 		return;
 	}
+	m_lastCaptureError.clear();
+
+	int geometryX = 0;
+	int geometryY = 0;
+	int geometryWidth = 0;
+	int geometryHeight = 0;
+	if (m_capture->captureGeometry(geometryX, geometryY, geometryWidth, geometryHeight))
+		emit frameGeometryChanged(geometryX, geometryY, geometryWidth, geometryHeight);
 
 	cv::Mat bgrFrame;
 	if (capturedFrame.channels() == 4)
